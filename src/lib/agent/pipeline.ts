@@ -169,7 +169,7 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
   }
   emit({ type: "meta", mode: "live", model: llm.name });
   const isGroq = llm.name.startsWith("Groq");
-  const excerptBudget = isGroq ? 7000 : 24000; // chars; Groq free tier has a small tokens/minute budget
+  const excerptBudget = isGroq ? 9500 : 24000; // chars; Groq free tier has a small tokens/minute budget
 
   // ---------- 1. resolve ----------
   emit({ type: "stage", stage: "resolve", status: "start" });
@@ -236,8 +236,10 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
   }));
   const rawByUrl = new Map(hits.map((h) => [h.url, h.raw]));
   sources.forEach((s) => emit({ type: "source", url: s.url, title: s.title }));
-  const per = Math.floor(excerptBudget / hits.length);
-  const corpus = hits.map((h, i) => `[s${i + 1}] ${h.title} (${sources[i].kind})\n${excerpt(h.raw, per)}`).join("\n\n");
+  // Pages about review, pricing or limits carry the requirements that decide difficulty: give them more room.
+  const weight = (u: string) => (/review|verif|pric|limit|plan|partner|certif|publish|marketplace|listing/i.test(u) ? 1.6 : 1);
+  const totalW = hits.reduce((n, h) => n + weight(h.url), 0);
+  const corpus = hits.map((h, i) => `[s${i + 1}] ${h.title} (${sources[i].kind})\n${excerpt(h.raw, Math.floor((excerptBudget * weight(h.url)) / totalW))}`).join("\n\n");
   emit({ type: "stage", stage: "research", status: "done", detail: `${hits.length} pages read (${sources.filter((s) => s.kind === "official").length} official)` });
 
   const RULES = `Rules:
@@ -275,7 +277,7 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
         .map((s) => `- ${s.id}: ${s.label} — ${s.description}; scopes: ${s.scopes.map((x) => x.name).join(", ")}`)
         .join("\n")}\n\nExcerpts:\n${corpus}\n\nReturn JSON: {"scenarios": [{"id", "steps": [{"phase":"prepare"|"create"|"configure"|"connect"|"review"|"launch", "title", "detail" (1-3 sentences, concrete field names), "actor", "agentCan": text or null, "humanMust": text or null, "url" (only if from excerpts or the portal URL above), "values": [{"label","value"}] exact values to paste, "estMinutes", "quote", "src"}], "blockers": [{"title","symptom","whatToDo","quote","src"}]}], "artifacts": [{"title","content"}] (1-2 drafts an agent can write now, e.g. scope justification or app description)}. ${isGroq ? "Max 6 steps and 3 blockers per scenario, 1 short artifact. Keep detail to 1-2 sentences. Be concise." : "4-10 steps and 2-5 blockers per scenario."}`,
       emit,
-      isGroq ? 4800 : 6000,
+      isGroq ? 4200 : 6000,
     ),
   );
   emit({ type: "stage", stage: "plan", status: "done", detail: `${planned.scenarios.reduce((n, s) => n + s.steps.length, 0)} steps, ${planned.scenarios.reduce((n, s) => n + s.blockers.length, 0)} blockers` });

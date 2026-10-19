@@ -101,7 +101,8 @@ We ran the live agent on apps outside the library (Zoom, Calendly, Xero, Notion)
 | The verifier catches misattributed quotes | Zoom 2/18, Xero 3/7, Notion 1/8 quotes not on the cited page → downgraded | Working as designed |
 | Model output drifts from the requested JSON shape | Factors returned as bare `true` instead of `{value, quote}`; booleans in text fields. One bad field silently emptied all steps (0 steps on the first Zoom run) | Lenient parsing per item, plus repair of truncated JSON |
 | The free tier has an undocumented output-tokens-per-minute cap | `qwen/qwen3.8-27b`: 1,000 output tokens/min, too small for one guide | Switched to `openai/gpt-oss-120b` with `reasoning_effort: low` |
-| Coverage varies between runs | Two Xero runs read different page sets; one missed the partner-program page | Documented as a limitation. A search key or a stronger model improves coverage |
+| Coverage varies between runs | Two crawler-only Xero runs read different page sets and missed Xero's pricing/connection-limit page | Added Tavily keyless search (with the crawler as fallback), and gave review/pricing/limits pages more excerpt room. Xero now correctly comes out **Gated**, with 15/16 quotes confirmed |
+| The keyless search cap is low | After ~4 guides: `429 hourly_cap_reached` | The agent switches to the crawler mid-run, and the guide still completes. A free key (no card) raises the cap |
 
 ## 4. Console walkthroughs (✅ tested)
 

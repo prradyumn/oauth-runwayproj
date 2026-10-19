@@ -38,7 +38,7 @@ export async function search(
 }
 
 const KEYWORDS =
-  /oauth|scope|redirect|callback|client id|client secret|review|verif|approv|publish|distribut|marketplace|install|limit|partner|privacy|security|assessment|business|token|expire|test user|production|consent/gi;
+  /oauth|scope|redirect|callback|client id|client secret|review|verif|approv|publish|distribut|marketplace|install|limit|partner|privacy|security|assessment|business|token|expire|test user|production|consent|certif|connections?\b|plans?\b|pric|fee|paid|tier|maximum|cap\b|users\b/gi;
 
 /** Pick the paragraphs most likely to carry setup/review requirements, in original order. */
 export function excerpt(text: string, maxChars: number): string {
