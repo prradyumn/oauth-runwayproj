@@ -8,7 +8,7 @@
     "docsUrl": "https://docs.slack.dev"
   },
   "origin": "curated",
-  "lastVerified": "2026-10-19",
+  "lastVerified": "2026-10-20",
   "summary": "Creating a Slack app and connecting it to your own workspace is self-serve, takes minutes, and has no Slack review. Turning on public distribution to other workspaces also has no review, but since May 29, 2025 new non-Marketplace distributed apps (and new installs of existing ones) are limited to 1 request per minute and 15 messages per call on conversations.history and conversations.replies. That limit breaks most AI agents that read message history, and Slack's updated API terms say the Marketplace is the only appropriate channel for commercial distribution. A Marketplace listing removes the limit, but you need 10 active workspace installs before you can submit, a public landing page, support page and privacy policy, and Slack says the review can take up to 10 business days plus up to 10 weeks.",
   "composio": {
     "managedAppAvailable": {
@@ -97,17 +97,13 @@
         "selfServeCreate": {
           "value": true,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s1"
             ],
             "quote": "Select the Workspace where you'll be developing your app. You'll be able to distribute your app to other workspaces later if you choose.",
-            "note": "Anyone who belongs to a Slack workspace can create an app at api.slack.com/apps.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.slack.dev/app-management/quickstart-app-settings"
-            }
+            "note": "Created in the console with a free workspace; no approval needed."
           }
         },
         "reviewRequired": {
@@ -275,13 +271,13 @@
           "id": "ow-create",
           "phase": "create",
           "title": "Create the app from a manifest",
-          "detail": "Go to api.slack.com/apps, click **Create New App**, choose **From a manifest**, pick your workspace, paste the manifest from the artifact, review the summary, and click **Create**.",
+          "detail": "Go to api.slack.com/apps, click **Create an App**, choose **From a manifest** (other options: AI agent, Starter app, Blank app), pick your workspace, paste the manifest from the artifact, review the summary, and click **Create**.",
           "actor": "both",
           "agentCan": "Write the app manifest (YAML/JSON) with the name, bot user, scopes and redirect URL filled in.",
           "humanMust": "Log in to Slack, choose the workspace, paste the manifest and click Create.",
           "links": [
             {
-              "label": "Your apps / Create New App",
+              "label": "Your apps / Create an App",
               "url": "https://api.slack.com/apps?new_app=1"
             },
             {
@@ -557,32 +553,25 @@
         "selfServeCreate": {
           "value": true,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s3"
             ],
             "quote": "Scroll to Share Your App with Other Workspaces within the Manage Distribution section.",
-            "note": "You turn on distribution yourself from the app dashboard.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.slack.dev/app-management/distribution"
-            }
+            "note": "Created in the console with a free workspace; no approval needed."
           }
         },
         "reviewRequired": {
           "value": false,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t3",
               "s3"
             ],
             "quote": "Unlike unlisted distributed apps, apps listed in the Slack Marketplace are reviewed against our requirements",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.slack.dev/app-management/distribution"
-            }
+            "note": "Tested: activating public distribution has no review step; the checklist is self-serve."
           }
         },
         "securityAssessment": {
@@ -636,9 +625,11 @@
         "privacyPolicyRequired": {
           "value": false,
           "evidence": {
-            "status": "unverified",
-            "sourceIds": [],
-            "note": "The fetched docs do not list a privacy policy as a distribution requirement. The in-console Manage Distribution checklist has not been viewed."
+            "status": "tested",
+            "sourceIds": [
+              "t3"
+            ],
+            "note": "Tested: the Manage Distribution checklist is Enable Features & Functionality · Add OAuth Redirect URLs · Remove Hard Coded Information · Use HTTPS For Your Features · Activate Public Distribution. No privacy policy required for unlisted distribution."
           }
         },
         "domainVerification": {
@@ -722,13 +713,13 @@
           "id": "di-create",
           "phase": "create",
           "title": "Create the app from a manifest (same as own-workspace)",
-          "detail": "Go to api.slack.com/apps, then **Create New App > From a manifest**, pick your development workspace, paste the manifest, and click **Create**.",
+          "detail": "Go to api.slack.com/apps, then **Create an App > From a manifest**, pick your development workspace, paste the manifest, and click **Create**.",
           "actor": "both",
           "agentCan": "Write the manifest.",
           "humanMust": "Log in and create the app.",
           "links": [
             {
-              "label": "Create New App",
+              "label": "Create an App",
               "url": "https://api.slack.com/apps?new_app=1"
             }
           ],
@@ -1017,16 +1008,13 @@
         "selfServeCreate": {
           "value": true,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s1"
             ],
             "quote": "Select the Workspace where you'll be developing your app. You'll be able to distribute your app to other workspaces later if you choose.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.slack.dev/app-management/quickstart-app-settings"
-            }
+            "note": "Created in the console with a free workspace; no approval needed."
           }
         },
         "reviewRequired": {
@@ -1439,7 +1427,7 @@
     {
       "title": "Slack app manifest (YAML, for Composio)",
       "forStepId": "ow-create",
-      "content": "Paste into **api.slack.com/apps > Create New App > From a manifest**. Replace the redirect URL with Composio's callback URL, and make the scopes match what your Composio auth config requests.\n\n```yaml\ndisplay_information:\n  name: Acme Agent\n  description: AI agent that answers questions and takes actions in Slack.\n  background_color: \"#1f2937\"\nfeatures:\n  bot_user:\n    display_name: Acme Agent\n    always_online: true\noauth_config:\n  redirect_urls:\n    - https://REPLACE-WITH-COMPOSIO-CALLBACK-URL\n  scopes:\n    bot:\n      - app_mentions:read\n      - chat:write\n      - channels:read\n      - channels:history\n      - groups:history\n      - im:history\n      - users:read\n    user:\n      - search:read   # remove for a Marketplace submission\nsettings:\n  org_deploy_enabled: false\n  socket_mode_enabled: false\n  token_rotation_enabled: false\n```\n\nNotes:\n- `token_rotation_enabled: false` keeps bot tokens long-lived. Turn it on only if Composio refreshes Slack tokens for you (see open questions).\n- Set `org_deploy_enabled: true` only if you need org-wide installs in an Enterprise org. Changing it later needs a reinstall."
+      "content": "Paste into **api.slack.com/apps > Create an App > From a manifest**. Replace the redirect URL with Composio's callback URL, and make the scopes match what your Composio auth config requests.\n\n```yaml\ndisplay_information:\n  name: Acme Agent\n  description: AI agent that answers questions and takes actions in Slack.\n  background_color: \"#1f2937\"\nfeatures:\n  bot_user:\n    display_name: Acme Agent\n    always_online: true\noauth_config:\n  redirect_urls:\n    - https://REPLACE-WITH-COMPOSIO-CALLBACK-URL\n  scopes:\n    bot:\n      - app_mentions:read\n      - chat:write\n      - channels:read\n      - channels:history\n      - groups:history\n      - im:history\n      - users:read\n    user:\n      - search:read   # remove for a Marketplace submission\nsettings:\n  org_deploy_enabled: false\n  socket_mode_enabled: false\n  token_rotation_enabled: false\n```\n\nNotes:\n- `token_rotation_enabled: false` keeps bot tokens long-lived. Turn it on only if Composio refreshes Slack tokens for you (see open questions).\n- Set `org_deploy_enabled: true` only if you need org-wide installs in an Enterprise org. Changing it later needs a reinstall."
     },
     {
       "title": "Scope reasons and admin-approval note (draft)",
@@ -1455,12 +1443,47 @@
   "openQuestions": [
     "Does Composio's Slack connection request scopes through the standard v2 authorize URL (scope + user_scope)? Must every requested scope also be pre-configured in the app, or does Slack accept scopes in the URL that are not in the app config?",
     "If token rotation is turned on for the app, does Composio refresh Slack tokens automatically (Slack access tokens expire after 12 hours when rotation is on)?",
-    "What exactly is on the in-console Manage Distribution checklist in 2026, and does it require a privacy policy or support URL? Not checked against the live console.",
     "Does the 1 request/minute limit on conversations.history apply to an app owned by a third party but installed in only one customer workspace? The docs exempt 'internal customer-built apps' but do not define the term precisely.",
     "What does the 'Security Review' policy linked from the Marketplace guidelines contain, and does it ever require third-party penetration tests?",
-    "Exact consent-screen button labels ('Allow' vs 'Request to Install') on the redesigned OAuth page (Oct 2025) have not been tested."
+    "Exact consent-screen button labels ('Allow' vs 'Request to Install') on the redesigned OAuth page (Oct 2025) have not been tested.",
+    "Does Slack reject http:// redirect URLs at entry time or only at authorization? The walkthrough didn't capture a clear rejection."
   ],
-  "testLog": [],
+  "testLog": [
+    {
+      "date": "2026-10-20",
+      "by": "agent (Playwright, user's signed-in browser)",
+      "what": "Clicked Create an App",
+      "observed": "The dialog now offers AI agent / Starter app / From a manifest / Blank app ('From scratch' is gone). Blank app runs a 4-step wizard: name + workspace → scopes → … → Review, with 'Create Anyway' if no scopes are chosen.",
+      "screenshot": "/evidence/slack/1-create-dialog.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Opened the new app's settings",
+      "observed": "App settings now live at app.slack.com/app-settings/<team>/<app>/… The sidebar includes Agents, MCP Servers (New) and a 5-step 'Submit to Slack Marketplace' flow (listing, review scopes, security & compliance, testing info, automated checks). OAuth & Permissions offers PKCE opt-in and Enterprise-Managed Authorization (org-ready apps only).",
+      "screenshot": "/evidence/slack/5-oauth-page.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Added Composio's redirect URL and saved",
+      "observed": "Saved. Whether an http:// URL is rejected was not conclusively observed.",
+      "screenshot": "/evidence/slack/7-redirect-saved.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Opened Manage Distribution",
+      "observed": "Checklist before public distribution: Enable Features & Functionality · Add OAuth Redirect URLs · Remove Hard Coded Information · Use HTTPS For Your Features · Activate Public Distribution. No privacy-policy or review step at this stage (that comes with a Marketplace listing).",
+      "screenshot": "/evidence/slack/8-manage-distribution.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Deleted the test app",
+      "observed": "Confirmation: 'All existing tokens will become invalid.' Deleted; 0 test apps remain."
+    }
+  ],
   "sources": [
     {
       "id": "s1",
@@ -1559,6 +1582,34 @@
       "title": "Slack docs — Real-time Search API",
       "kind": "official",
       "accessed": "2026-10-19"
+    },
+    {
+      "id": "t1",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/slack/1-create-dialog.png",
+      "title": "Console walkthrough: Create an App dialog (2026-10-20)",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t2",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/slack/4-wizard-review.png",
+      "title": "Console walkthrough: 4-step create wizard",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t3",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/slack/8-manage-distribution.png",
+      "title": "Console walkthrough: Manage Distribution checklist",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t4",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/slack/7-redirect-saved.png",
+      "title": "Console walkthrough: redirect URL saved",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
     }
   ]
 }

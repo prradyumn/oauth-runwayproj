@@ -8,7 +8,7 @@
     "docsUrl": "https://developers.google.com/workspace/gmail/api/guides"
   },
   "origin": "curated",
-  "lastVerified": "2026-10-19",
+  "lastVerified": "2026-10-20",
   "summary": "Gmail is easy for yourself and your own Workspace org and very hard for the public. Internal apps and Testing-mode apps work in under an hour, but Testing caps you at 100 named test users whose Gmail grants expire every 7 days. A public agent that reads or modifies mail needs Google's restricted-scope verification (Google's own estimate: about 6 weeks, not guaranteed) plus an annual CASA security assessment you arrange and usually pay for; send-only (gmail.send) is sensitive and avoids CASA.",
   "composio": {
     "managedAppAvailable": {
@@ -659,6 +659,18 @@
               "url": "https://support.google.com/cloud/answer/7454865?hl=en"
             }
           }
+        },
+        {
+          "title": "Gmail scopes missing from the scope picker",
+          "symptom": "Add or remove scopes shows no Gmail scopes.",
+          "whatToDo": "Enable the Gmail API first (APIs & Services → Library → Gmail API → Enable), then refresh. Or paste the full scope URLs into 'Manually add scopes'.",
+          "evidence": {
+            "status": "tested",
+            "sourceIds": [
+              "t3"
+            ],
+            "note": "Tested: the picker says 'Only scopes for enabled APIs are listed below.'"
+          }
         }
       ]
     },
@@ -754,16 +766,11 @@
         "userCapBeforeReview": {
           "value": 100,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
-              "s2"
+              "t1"
             ],
-            "quote": "Projects configured with a publishing status of Testing are limited to up to 100 test users listed in the OAuth consent screen.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://support.google.com/cloud/answer/15549945?hl=en"
-            }
+            "note": "Tested, console text: While publishing status is set to 'Testing,' only test users are able to access the app. Allowed user cap prior to app verification is 100, and is counted over the entire lifetime of the app."
           }
         },
         "demoVideoRequired": {
@@ -1021,16 +1028,13 @@
           ],
           "estMinutes": 5,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s14"
             ],
             "quote": "Select the scopes that provide the minimum level of access required by your app.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://developers.google.com/workspace/guides/configure-oauth-consent"
-            }
+            "note": "Tested: Google classifies gmail.send as sensitive and gmail.readonly as restricted on the Data access page."
           }
         },
         {
@@ -1182,6 +1186,18 @@
           }
         },
         {
+          "title": "100-user cap is lifetime and cannot be reset",
+          "symptom": "New users get \"Sign in with Google temporarily disabled\" once roughly 100 people have authorized the unverified app.",
+          "whatToDo": "Don't burn the cap on a beta launch. Keep production traffic on a separate project that you submit for verification, and check usage under Audience > OAuth user cap.",
+          "evidence": {
+            "status": "tested",
+            "sourceIds": [
+              "t1"
+            ],
+            "note": "Tested: the Testing-status Audience page states the cap is counted over the entire lifetime of the app. This restores the blocker the review agent had removed from Testing (correction A15)."
+          }
+        },
+        {
           "title": "\"Google hasn't verified this app\" screen",
           "symptom": "Users see a warning interstitial before the consent screen and must click Advanced > Go to <app> (unsafe) to continue.",
           "whatToDo": "Expected while unverified or in Testing. If you are verified and still see it, the scopes Composio requests differ from the ones approved on Data Access: diff the two lists and either remove the extra scope from the auth config or submit it for verification.",
@@ -1213,6 +1229,18 @@
               "checkedAt": "2026-10-19",
               "url": "https://support.google.com/cloud/answer/15549945?hl=en"
             }
+          }
+        },
+        {
+          "title": "Gmail scopes missing from the scope picker",
+          "symptom": "Add or remove scopes shows no Gmail scopes.",
+          "whatToDo": "Enable the Gmail API first (APIs & Services → Library → Gmail API → Enable), then refresh. Or paste the full scope URLs into 'Manually add scopes'.",
+          "evidence": {
+            "status": "tested",
+            "sourceIds": [
+              "t3"
+            ],
+            "note": "Tested: the picker says 'Only scopes for enabled APIs are listed below.'"
           }
         }
       ]
@@ -1671,16 +1699,13 @@
           ],
           "estMinutes": 5,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s14"
             ],
             "quote": "Select the scopes that provide the minimum level of access required by your app.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://developers.google.com/workspace/guides/configure-oauth-consent"
-            }
+            "note": "Tested: Google classifies gmail.send as sensitive and gmail.readonly as restricted on the Data access page."
           }
         },
         {
@@ -2181,6 +2206,18 @@
               "url": "https://support.google.com/cloud/answer/13463817?hl=en"
             }
           }
+        },
+        {
+          "title": "Gmail scopes missing from the scope picker",
+          "symptom": "Add or remove scopes shows no Gmail scopes.",
+          "whatToDo": "Enable the Gmail API first (APIs & Services → Library → Gmail API → Enable), then refresh. Or paste the full scope URLs into 'Manually add scopes'.",
+          "evidence": {
+            "status": "tested",
+            "sourceIds": [
+              "t3"
+            ],
+            "note": "Tested: the picker says 'Only scopes for enabled APIs are listed below.'"
+          }
         }
       ]
     },
@@ -2632,16 +2669,13 @@
           ],
           "estMinutes": 5,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s14"
             ],
             "quote": "Select the scopes that provide the minimum level of access required by your app.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://developers.google.com/workspace/guides/configure-oauth-consent"
-            }
+            "note": "Tested: Google classifies gmail.send as sensitive and gmail.readonly as restricted on the Data access page."
           }
         },
         {
@@ -3053,6 +3087,18 @@
               "url": "https://support.google.com/cloud/answer/7454865?hl=en"
             }
           }
+        },
+        {
+          "title": "Gmail scopes missing from the scope picker",
+          "symptom": "Add or remove scopes shows no Gmail scopes.",
+          "whatToDo": "Enable the Gmail API first (APIs & Services → Library → Gmail API → Enable), then refresh. Or paste the full scope URLs into 'Manually add scopes'.",
+          "evidence": {
+            "status": "tested",
+            "sourceIds": [
+              "t3"
+            ],
+            "note": "Tested: the picker says 'Only scopes for enabled APIs are listed below.'"
+          }
         }
       ]
     }
@@ -3082,7 +3128,36 @@
     "Is a paid Google Workspace subscription strictly required for the Internal scenario, or does a free Cloud Identity organization work the same for Gmail (Gmail itself requires Workspace)?",
     "Gmail API pricing: no billing was required in Google's described flow, but no fetched page explicitly states the Gmail API is free."
   ],
-  "testLog": [],
+  "testLog": [
+    {
+      "date": "2026-10-20",
+      "by": "agent + user (Playwright, user's signed-in browser)",
+      "what": "Created a project and ran Google Auth Platform 'Get started' (External)",
+      "observed": "4-step wizard: App information → Audience → Contact information → Finish. Gotcha: the project ID Google assigned (protean-trilogy-…) differed from the project name typed, and the console uses the ID in URLs.",
+      "minutes": 4
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Opened Audience",
+      "observed": "While publishing status is set to 'Testing,' only test users are able to access the app. Allowed user cap prior to app verification is 100, and is counted over the entire lifetime of the app.",
+      "screenshot": "/evidence/gmail/4-audience-testing.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Opened Data access → Add or remove scopes",
+      "observed": "Gmail scopes were missing: 'Only scopes for enabled APIs are listed below.' The Gmail API had not been enabled. Scopes can also be pasted under 'Manually add scopes'.",
+      "screenshot": "/evidence/gmail/5-scope-gmail-readonly.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Manually added gmail.readonly and gmail.send",
+      "observed": "Google filed .../auth/gmail.send under 'Your sensitive scopes' and .../auth/gmail.readonly under 'Your restricted scopes'. Changes were not saved.",
+      "screenshot": "/evidence/gmail/6-data-access-classified.png"
+    }
+  ],
   "sources": [
     {
       "id": "s1",
@@ -3237,6 +3312,27 @@
       "title": "Google Workspace Admin Help — Control which apps access Google Workspace data",
       "kind": "official",
       "accessed": "2026-10-19"
+    },
+    {
+      "id": "t1",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/gmail/4-audience-testing.png",
+      "title": "Console walkthrough: Audience page in Testing (2026-10-20)",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t2",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/gmail/6-data-access-classified.png",
+      "title": "Console walkthrough: Data access, scopes classified",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t3",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/gmail/5-scope-gmail-readonly.png",
+      "title": "Console walkthrough: scope picker lists only enabled APIs",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
     }
   ]
 }

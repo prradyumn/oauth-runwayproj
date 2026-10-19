@@ -104,15 +104,37 @@ We ran the live agent on apps outside the library (Zoom, Calendly, Xero, Notion)
 | Coverage varies between runs | Two crawler-only Xero runs read different page sets and missed Xero's pricing/connection-limit page | Added Tavily keyless search (with the crawler as fallback), and gave review/pricing/limits pages more excerpt room. Xero now correctly comes out **Gated**, with 15/16 quotes confirmed |
 | The keyless search cap is low | After ~4 guides: `429 hourly_cap_reached` | The agent switches to the crawler mid-run, and the guide still completes. A free key (no card) raises the cap |
 
-## 4. Console walkthroughs (✅ tested)
+## 4. Console walkthroughs (✅ tested), 2026-10-20
 
-_Pending: see [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md). Each walkthrough adds `testLog` entries to its guide and upgrades the claims it confirms._
+An agent drove the provider consoles with Playwright in the user's own signed-in Chrome. The user handled sign-in and one Google consent-screen wizard. The agent created free test apps, captured each screen, then **deleted the GitHub and Slack apps**. Nothing was submitted for review. Screenshots are in [`public/evidence/`](public/evidence), shown on each guide under "What we tested in the console".
+
+| Provider | What we did | What we found | Effect on the guide |
+|---|---|---|---|
+| **GitHub** | Registered and deleted an OAuth app (~1 min) | The app is usable instantly, with no review; Marketplace listing is optional. The client secret exists only after "Generate a new client secret". **The form now labels the field "Redirect URI"** (docs: "Authorization callback URL"). Defaults: Expire user access tokens **on**, Allow wildcard matching **off**. Deleting warns that all user tokens are invalidated | 9 claims → ✅ tested. Field label corrected in steps and blockers |
+| **Google (Gmail)** | Created a project, ran Auth Platform "Get started" (External), added scopes manually (not saved) | Testing-status Audience page: *"Allowed user cap prior to app verification is 100, and is counted over the entire lifetime of the app."* Google files `gmail.send` as **sensitive** and `gmail.readonly` as **restricted**. **Gotcha:** the scope picker lists only enabled APIs, so with the Gmail API off, no Gmail scopes appear. **Gotcha:** the project ID Google assigned differed from the name typed | 9 claims → ✅ tested. New blocker: "Gmail scopes missing from the scope picker". The lifetime-cap blocker restored to Testing (see R2) |
+| **Slack** | Created an app, saved Composio's redirect URL, read Manage Distribution, deleted the app | **The create flow changed:** options are AI agent / Starter app / From a manifest / Blank app ("From scratch" is gone), in a 4-step wizard. Settings moved to `app.slack.com/app-settings/…`, with new Agents, MCP Servers and Enterprise-Managed Authorization sections. **Manage Distribution checklist:** Enable Features & Functionality · Add OAuth Redirect URLs · Remove Hard Coded Information · Use HTTPS · Activate Public Distribution. No privacy policy and no review | 5 claims → ✅ tested. Open question about the distribution checklist resolved. UI labels updated |
+| LinkedIn, HubSpot | Not tested | The user skipped sign-in | Guides remain documented-only |
+
+The walkthrough also exposed **automation lessons**, which are themselves evidence that these UIs change often:
+- Labels changed: GitHub's "Redirect URI", Slack's "Create an App" and "Blank app".
+- Slack changed its URL scheme.
+- Google's project name and ID can differ.
+
+Each of these broke a scripted step and needed a fix.
+
+### Where the console overruled the reviewer
+
+| # | Reviewer said | Console showed | Decision |
+|---|---|---|---|
+| R2 | A15: the "lifetime 100-user cap" blocker belongs to unverified *production* apps, not Testing | The **Testing** Audience page states the cap and that it "is counted over the entire lifetime of the app" (screenshot `gmail/4-audience-testing.png`) | Blocker restored to Testing as ✅ tested |
+
+**Evidence totals across the 5 library guides:** ✅ 23 tested · 📄 248 documented (all quote-verified) · ❓ 99 unverified.
 
 ## 5. What we could not verify
 
 - **Review wait times.** Most providers publish no SLA. Google gives non-guaranteed estimates (about 6 weeks for restricted scopes), Slack gives "up to 10 business days" for the first Marketplace review, and HubSpot says first feedback comes within 10 business days. All other ranges are estimates.
 - **CASA cost and duration** for a new app. It depends on the assessor, and Google charges no fee.
-- **Anything behind a login or a submission**: exact console button labels, the contents of Slack's Manage Distribution checklist, LinkedIn's review outcomes.
+- **Anything requiring a submission or approval**: review outcomes and real wait times (we never submitted anything). Also LinkedIn and HubSpot consoles (not walked through).
 - **Composio dashboard values.** The docs say to copy the redirect URI the dashboard shows. We used the documented value.
 
 Each guide's "Still uncertain" section lists its open questions.

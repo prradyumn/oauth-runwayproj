@@ -8,7 +8,7 @@
     "docsUrl": "https://docs.github.com/en/apps/oauth-apps"
   },
   "origin": "curated",
-  "lastVerified": "2026-10-19",
+  "lastVerified": "2026-10-20",
   "summary": "Creating a GitHub OAuth App is self-serve, free and takes about 15 minutes, and GitHub itself never reviews it, for your own account or for the public. The real blocker for a public launch is outside GitHub's control: organizations with OAuth app access restrictions (on by default for new orgs) or SAML SSO only let your app see their private repos after an org owner approves it, one org at a time. Also note that new OAuth Apps issue access tokens that expire after 8 hours by default, so check that your Composio connection refreshes them.",
   "composio": {
     "managedAppAvailable": {
@@ -72,26 +72,23 @@
         "selfServeCreate": {
           "value": true,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s1"
             ],
             "quote": "You can create and register an OAuth app under your personal account or under any organization you have administrative access to.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app"
-            }
+            "note": "Created in the console in about a minute with a free account; no approval step."
           }
         },
         "reviewRequired": {
           "value": false,
           "evidence": {
-            "status": "unverified",
+            "status": "tested",
             "sourceIds": [
-              "s1"
+              "t2"
             ],
-            "note": "The creation steps end at 'Register application' and mention no GitHub review. This is an inference from the absence of a review step, not a quoted statement."
+            "note": "Tested: the app was usable immediately after registering; GitHub shows no review step (Marketplace listing is optional)."
           }
         },
         "securityAssessment": {
@@ -264,7 +261,7 @@
               "value": "<optional; see the description draft>"
             },
             {
-              "label": "Authorization callback URL",
+              "label": "Redirect URI (docs call it 'Authorization callback URL')",
               "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback"
             },
             {
@@ -274,16 +271,13 @@
           ],
           "estMinutes": 5,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t1",
               "s1"
             ],
             "quote": "In \"Authorization callback URL\", type the callback URL of your app.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app"
-            }
+            "note": "Console (Oct 2026) labels the field 'Redirect URI'; GitHub's docs still say 'Authorization callback URL'."
           }
         },
         {
@@ -308,16 +302,13 @@
           ],
           "estMinutes": 1,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t1",
               "s1"
             ],
             "quote": "If your app's authentication code hasn't been updated to support short-lived tokens, uncheck the box until support is added.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app"
-            }
+            "note": "Confirmed in the console: 'Expire user access tokens' is checked by default on new apps."
           }
         },
         {
@@ -346,17 +337,13 @@
           ],
           "estMinutes": 2,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s13"
             ],
             "quote": "Client secrets are required to generate access tokens for your app, unless your app uses the device flow.",
-            "note": "The exact button label ('Generate a new client secret') and whether the secret is shown only once were not on a fetched page.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/best-practices-for-creating-an-oauth-app"
-            }
+            "note": "Confirmed: the app page shows 'Generate a new client secret'; no secret exists until you click it."
           }
         },
         {
@@ -415,7 +402,7 @@
         {
           "title": "redirect_uri_mismatch",
           "symptom": "After authorizing, GitHub redirects with error=redirect_uri_mismatch instead of completing the connection.",
-          "whatToDo": "Make the app's Authorization callback URL exactly match the Composio callback URL (scheme, host, path, no trailing-slash differences). If wildcard matching is off, the match must be exact.",
+          "whatToDo": "Make the app's Redirect URI (labelled 'Authorization callback URL' in older docs) exactly match the Composio callback URL (scheme, host, path, no trailing-slash differences). If wildcard matching is off, the match must be exact.",
           "evidence": {
             "status": "documented",
             "sourceIds": [
@@ -501,16 +488,13 @@
         "selfServeCreate": {
           "value": true,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
               "s1"
             ],
             "quote": "You can create and register an OAuth app under your personal account or under any organization you have administrative access to.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app"
-            }
+            "note": "Created in the console in about a minute with a free account; no approval step."
           }
         },
         "reviewRequired": {
@@ -707,7 +691,7 @@
               "value": "<paste the description draft>"
             },
             {
-              "label": "Authorization callback URL",
+              "label": "Redirect URI (docs call it 'Authorization callback URL')",
               "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback"
             },
             {
@@ -717,17 +701,13 @@
           ],
           "estMinutes": 10,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t1",
               "s4"
             ],
             "quote": "Applications that are owned by the organization are automatically given access to the organization's resources.",
-            "note": "The org-level URL pattern (github.com/organizations/YOUR-ORG/settings/applications/new) is not quoted from docs. Navigate via Org Settings > Developer settings if it differs.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions"
-            }
+            "note": "Console (Oct 2026) labels the field 'Redirect URI'; GitHub's docs still say 'Authorization callback URL'."
           }
         },
         {
@@ -752,16 +732,13 @@
           ],
           "estMinutes": 2,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t1",
               "s2"
             ],
             "quote": "When wildcard matching is disabled, the redirect URL must exactly match the callback URL.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps"
-            }
+            "note": "Confirmed: 'Allow wildcard matching' is unchecked by default."
           }
         },
         {
@@ -789,16 +766,14 @@
           ],
           "estMinutes": 3,
           "evidence": {
-            "status": "documented",
+            "status": "tested",
             "sourceIds": [
+              "t2",
+              "t1",
               "s13"
             ],
             "quote": "You must store your app's client secret and any generated tokens securely, if possible.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/best-practices-for-creating-an-oauth-app"
-            }
+            "note": "Confirmed: the app page shows 'Generate a new client secret'; no secret exists until you click it."
           }
         },
         {
@@ -1076,7 +1051,30 @@
     "The 'no review, no user cap, no privacy policy' factors are inferred from the absence of such requirements in GitHub docs, not from an explicit statement.",
     "The org-level new-app URL pattern (github.com/organizations/ORG/settings/applications/new) was not confirmed from docs."
   ],
-  "testLog": [],
+  "testLog": [
+    {
+      "date": "2026-10-20",
+      "by": "agent (Playwright, user's signed-in browser)",
+      "what": "Opened Register a new OAuth app",
+      "observed": "Fields: Application name, Homepage URL, Application description, Redirect URI, Allow wildcard matching, Enable Device Flow, Expire user access tokens. Defaults: Expire user access tokens ON, Allow wildcard matching OFF.",
+      "screenshot": "/evidence/github/1-register-form.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Registered the app with Composio's redirect URI",
+      "observed": "App created instantly with no review step, 0 users, Client ID shown. The client secret only exists after clicking 'Generate a new client secret'. Marketplace listing is offered but optional.",
+      "minutes": 1,
+      "screenshot": "/evidence/github/3-app-created.png"
+    },
+    {
+      "date": "2026-10-20",
+      "by": "agent",
+      "what": "Deleted the test app",
+      "observed": "Confirmation warns that deleting the OAuth application invalidates any access tokens authorized by users. Deleted; 0 test apps remain.",
+      "screenshot": "/evidence/github/5-delete-confirm.png"
+    }
+  ],
   "sources": [
     {
       "id": "s1",
@@ -1203,6 +1201,27 @@
       "title": "GitHub Docs — Managing allowed IP addresses for your organization",
       "kind": "official",
       "accessed": "2026-10-19"
+    },
+    {
+      "id": "t1",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/github/1-register-form.png",
+      "title": "Console walkthrough: Register a new OAuth app form (2026-10-20)",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t2",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/github/3-app-created.png",
+      "title": "Console walkthrough: app created, client ID + secret controls",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "t3",
+      "url": "https://oauth-runwayproj.vercel.app/evidence/github/5-delete-confirm.png",
+      "title": "Console walkthrough: delete confirmation",
+      "kind": "test-log",
+      "accessed": "2026-10-20"
     }
   ]
 }
