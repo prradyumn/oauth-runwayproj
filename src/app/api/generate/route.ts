@@ -1,6 +1,6 @@
 import { runPipeline } from "@/lib/agent/pipeline";
 import type { AgentEvent } from "@/lib/agent/events";
-import { getGuide, listCurated, saveGenerated, slugify } from "@/lib/store";
+import { blobEnabled, getGuide, listCurated, saveGenerated, slugify } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // research + free-tier rate-limit waits can take a few minutes
@@ -29,7 +29,8 @@ export async function POST(req: Request) {
         // Never overwrite a curated library guide with a live run.
         if ((await listCurated()).some((g) => g.slug === guide.slug)) guide.slug = `${guide.slug}-live`;
         await saveGenerated(guide);
-        emit({ type: "done", slug: guide.slug, guide });
+        // On Vercel without Blob, /tmp is per-instance: the share link would 404 elsewhere.
+        emit({ type: "done", slug: guide.slug, guide, saved: blobEnabled() || !process.env.VERCEL });
       } catch (err) {
         emit({ type: "error", message: err instanceof Error ? err.message : String(err) });
       }

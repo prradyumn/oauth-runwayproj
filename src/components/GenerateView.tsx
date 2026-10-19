@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { STAGES, type AgentEvent, type StageId } from "@/lib/agent/events";
 import SearchBox from "./SearchBox";
+import GuideView from "./GuideView";
+import { guideToMarkdown } from "@/lib/markdown";
+import type { Guide } from "@/lib/schema";
 
 type StageState = { status: "pending" | "start" | "done" | "error"; detail?: string; t0?: number; t1?: number };
 
@@ -17,7 +20,7 @@ export default function GenerateView() {
   const [logs, setLogs] = useState<{ t: number; m: string }[]>([]);
   const [sources, setSources] = useState<{ url: string; title: string }[]>([]);
   const [meta, setMeta] = useState<{ mode: string; model?: string } | null>(null);
-  const [done, setDone] = useState<{ slug: string; cached?: boolean } | null>(null);
+  const [done, setDone] = useState<{ slug: string; cached?: boolean; guide: Guide; saved?: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState(0);
   const [now, setNow] = useState(0);
@@ -61,7 +64,7 @@ export default function GenerateView() {
       else if (e.type === "source") setSources((s) => [...s, { url: e.url, title: e.title }]);
       else if (e.type === "error") setError(e.message);
       else if (e.type === "done") {
-        setDone({ slug: e.slug, cached: e.cached });
+        setDone({ slug: e.slug, cached: e.cached, guide: e.guide, saved: e.saved });
         if (e.cached) router.push(`/guides/${e.slug}`);
       }
     }
@@ -118,12 +121,31 @@ export default function GenerateView() {
       )}
 
       {done && !done.cached && (
-        <div className="card p-5 flex flex-wrap items-center justify-between gap-3" style={{ background: "var(--t0-bg)" }}>
+        <div className="card p-5 flex flex-wrap items-center justify-between gap-3" style={{ background: done.saved === false ? "var(--t2-bg)" : "var(--t0-bg)" }}>
           <div>
-            <div className="font-medium">Guide ready</div>
-            <div className="text-sm text-muted">Saved with a permanent link you can share.</div>
+            <div className="font-medium">Guide ready{done.saved === false ? " (not saved)" : ""}</div>
+            <div className="text-sm text-muted">
+              {done.saved === false
+                ? "Storage isn't configured on this deployment, so there's no permanent share link. The full guide is below; download it as Markdown to share."
+                : "Saved with a permanent link you can share. The full guide is also below."}
+            </div>
           </div>
-          <Link href={`/guides/${done.slug}`} className="rounded-xl bg-accent text-white px-5 py-2.5 text-sm font-medium">Open guide →</Link>
+          {done.saved !== false ? (
+            <Link href={`/guides/${done.slug}`} className="rounded-xl bg-accent text-white px-5 py-2.5 text-sm font-medium">Open shareable page →</Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(new Blob([guideToMarkdown(done.guide)], { type: "text/markdown" }));
+                a.download = `${done.slug}-oauth-guide.md`;
+                a.click();
+              }}
+              className="rounded-xl bg-accent text-white px-5 py-2.5 text-sm font-medium cursor-pointer"
+            >
+              Download Markdown
+            </button>
+          )}
         </div>
       )}
 
@@ -138,6 +160,12 @@ export default function GenerateView() {
             ))}
           </ul>
         </section>
+      )}
+
+      {done && !done.cached && (
+        <div className="-mx-4 border-t border-border pt-2">
+          <GuideView guide={done.guide} />
+        </div>
       )}
 
       {logs.length > 0 && (

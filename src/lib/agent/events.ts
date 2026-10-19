@@ -15,7 +15,7 @@ export type AgentEvent =
   | { type: "stage"; stage: StageId; status: "start" | "done" | "error"; detail?: string }
   | { type: "log"; message: string }
   | { type: "source"; url: string; title: string }
-  | { type: "done"; slug: string; guide: Guide; cached?: boolean }
+  | { type: "done"; slug: string; guide: Guide; cached?: boolean; saved?: boolean }
   | { type: "error"; message: string };
 
 export type Emit = (e: AgentEvent) => void;
