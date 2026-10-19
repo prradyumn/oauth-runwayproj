@@ -1034,11 +1034,6 @@
           "name": "crm.objects.owners.read",
           "purpose": "Resolve owners.",
           "sensitivity": "basic"
-        },
-        {
-          "name": "crm.objects.contacts.sensitive.read",
-          "purpose": "Avoid unless essential: Sensitive Data properties (Enterprise only); app cards may not use sensitive data scopes at all.",
-          "sensitivity": "sensitive"
         }
       ],
       "factors": {
@@ -1208,7 +1203,7 @@
           "id": "mk-decide-access",
           "phase": "prepare",
           "title": "Decide user-level vs account-level BEFORE creating the app",
-          "detail": "If your app mainly connects HubSpot to generative-AI tools (an AI agent is the textbook case), HubSpot treats it as an **AI connector**: it must use user-level access (`isUserLevel: true`, platformVersion 2026.09, CLI 8.15.0+) or be built on HubSpot's MCP server. An existing account-level app cannot be switched later, so create a new app if needed.",
+          "detail": "If your app mainly connects HubSpot to generative-AI tools (an AI agent is the textbook case), HubSpot treats it as an **AI connector**: it must use user-level access (`isUserLevel: true`, platformVersion 2026.09, CLI 8.15.0+) or be built on HubSpot's MCP server. An existing account-level app cannot be switched later, so create a new app if needed. User-level apps don't support webhooks, app cards, serverless functions or custom workflow actions.",
           "actor": "both",
           "agentCan": "Classify the product against the AI-connector rule and set isUserLevel / platformVersion in the config.",
           "humanMust": "Make the product decision.",
@@ -1308,7 +1303,7 @@
           "id": "mk-scope-audit",
           "phase": "configure",
           "title": "Trim scopes to what the app actually uses",
-          "detail": "Remove unused scopes; move scopes that only some customers need into `optionalScopes` or `conditionallyRequiredScopes`. The scope list must match the Shared data table in the listing.",
+          "detail": "Remove unused scopes; move scopes that only some customers need into `optionalScopes` or `conditionallyRequiredScopes`. The scope list must match the Shared data table in the listing. Listed apps may not request any sensitive or highly sensitive data scopes (for example `crm.objects.contacts.sensitive.read`).",
           "actor": "agent",
           "agentCan": "Audit which HubSpot endpoints your Composio tools call and propose the minimal requiredScopes / optionalScopes split.",
           "links": [
@@ -1324,7 +1319,8 @@
             "sourceIds": [
               "s8"
             ],
-            "quote": "Your app must use all of the scopes that it requests during installation.",
+            "quote": "Your app must not access, request, or use sensitive data scopes",
+            "note": "Corrected after adversarial audit (2026-10-19).",
             "check": {
               "result": "confirmed",
               "checkedAt": "2026-10-19",
@@ -1530,7 +1526,8 @@
     "Do uninstalls free up slots under the 25-install pre-listing cap, and is the cap counted per HubSpot account (portal)?",
     "Can an app's `distribution` be changed from private to marketplace after upload, or does it need a new app?",
     "Is a demo video mandatory for the listing itself (the wizard has a Demo video section), or only for certification?",
-    "What exactly the HubSpot Acceptable Use Policy requires (not fetched/read here)."
+    "What exactly the HubSpot Acceptable Use Policy requires (not fetched/read here).",
+    "Do any Composio HubSpot triggers rely on HubSpot webhooks? User-level apps don't support webhooks, so those triggers wouldn't fire."
   ],
   "testLog": [],
   "sources": [

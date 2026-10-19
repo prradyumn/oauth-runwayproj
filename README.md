@@ -85,8 +85,8 @@ The stages are visible live on `/generate`. If a free-tier rate limit hits, the 
 
 ## Evidence & verification (summary)
 
-- **260 quoted claims** across the 5 curated guides. **260/260 confirmed** on the live source pages by the automated verifier (`npm run verify`, report in [data/verification-report.md](data/verification-report.md)).
-- A separate **reviewer agent** audited whether those quotes actually *support* the claimed values. It caught the cases a quote check can't. Corrections are in [VERIFICATION.md](VERIFICATION.md).
+- **264 quoted claims** across the 5 curated guides, **264/264 confirmed** on the live source pages by the automated verifier (`npm run verify`, report in [data/verification-report.md](data/verification-report.md)). The first run found 10 misses, which turned out to be a verifier bug: Google served translated pages.
+- A separate **reviewer agent** audited 48 high-impact claims for whether the quote actually *supports* the value. 21 needed changes, even though every one of them had a real quote. Examples: a HubSpot scope that would get a Marketplace listing rejected; Slack's Real-time Search API being unavailable to unlisted apps. One reviewer correction was **overruled** after checking the full source passage. Details in [VERIFICATION.md](VERIFICATION.md).
 - **Console walkthroughs** (✅ tested): see [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) and VERIFICATION.md for what was tested by hand.
 
 ## Run it locally

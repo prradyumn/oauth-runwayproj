@@ -9,7 +9,7 @@
   },
   "origin": "curated",
   "lastVerified": "2026-10-19",
-  "summary": "Posting as yourself (Sign In with LinkedIn using OpenID Connect plus Share on LinkedIn) is self-serve: create an app tied to a LinkedIn Page, add two products, paste the redirect URL, and you can connect in well under an hour. Posting as a Company Page needs the Community Management API, which is vetted: only registered legal organizations qualify, it must be requested on a fresh app with no other products, the Development tier is capped at 500 calls per app per day, and Standard tier needs a screencast, test credentials and LinkedIn's discretionary approval. In both cases access tokens last 60 days and programmatic refresh tokens are only for approved partners, so self-serve users must re-authorize roughly every two months.",
+  "summary": "Posting as yourself (Sign In with LinkedIn using OpenID Connect plus Share on LinkedIn) is self-serve: create an app tied to a LinkedIn Page, add two products, paste the redirect URL, and you can connect in well under an hour. Posting as a Company Page needs the Community Management API, which is vetted: only registered legal organizations qualify, it must be requested on a fresh app with no other products, the Development tier is capped at 500 calls per app per day, and Standard tier needs a screencast, test credentials and LinkedIn's discretionary approval. Self-serve apps get 60-day access tokens with no refresh token, so users must re-authorize roughly every two months. Community Management-approved apps are partners and are expected to use refresh tokens. Self-serve scopes are also write-only: the agent can post but can't read the member's posts.",
   "composio": {
     "managedAppAvailable": {
       "value": true,
@@ -530,6 +530,24 @@
               "url": "https://learn.microsoft.com/en-us/linkedin/shared/api-guide/concepts/rate-limits"
             }
           }
+        },
+        {
+          "title": "Agent can't read posts, comments or feed",
+          "symptom": "There is no scope to read the member's own posts or comments; w_member_social is write-only.",
+          "whatToDo": "Self-serve scopes only let the agent post. Reading member posts needs the Community Management API, and r_member_social is closed to new requests. Design the agent around posting, or go the company-pages route.",
+          "evidence": {
+            "status": "documented",
+            "sourceIds": [
+              "s8"
+            ],
+            "quote": "We're not accepting access requests at this time",
+            "note": "The closed permission is r_member_social. Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/community-management-overview?view=li-lms-2026-10"
+            }
+          }
         }
       ]
     },
@@ -714,7 +732,7 @@
         "production": {
           "handsOnHours": [
             16,
-            60
+            80
           ],
           "waitDays": [
             14,
@@ -1179,6 +1197,24 @@
               "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api?view=li-lms-2026-10"
             }
           }
+        },
+        {
+          "title": "Technical Sign Off expects a full community-management product",
+          "symptom": "Standard-tier review asks you to demonstrate capabilities your posting agent doesn't have (webhooks, PULL recovery, follower and share statistics).",
+          "whatToDo": "Read the integration requirements before you build. A posting-only agent may be asked to build more or be refused, so scope the product to what LinkedIn certifies.",
+          "evidence": {
+            "status": "documented",
+            "sourceIds": [
+              "s12"
+            ],
+            "quote": "When you're nearing completion, you must initiate a Technical Sign Off request",
+            "note": "Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/integration-requirements-community-management?view=li-lms-2026-10"
+            }
+          }
         }
       ]
     }
@@ -1207,7 +1243,8 @@
     "Typical review time for Community Management API Development and Standard tiers: no SLA is published.",
     "Exact field labels on the Create app form (privacy policy URL optional or required) - the form is behind login and was not fetched.",
     "Can a Standard tier screencast use Composio's hosted connect flow for the OAuth step, and will reviewers accept an agent-style UI as 'your app'?",
-    "Does Composio's managed LinkedIn app already include Community Management scopes (would remove the need for your own app)? Pending Composio check."
+    "Does Composio's managed LinkedIn app already include Community Management scopes (would remove the need for your own app)? Pending Composio check.",
+    "Which LinkedIn-Version header does Composio send for organization posting, and is it newer than 202511 (Marketing version sunset November 16, 2026)?"
   ],
   "testLog": [],
   "sources": [

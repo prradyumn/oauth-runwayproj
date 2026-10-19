@@ -211,17 +211,18 @@
           }
         },
         "customerAdminApproval": {
-          "value": true,
+          "value": false,
           "evidence": {
             "status": "documented",
             "sourceIds": [
-              "s17"
+              "s19"
             ],
-            "quote": "To allow API access for all internal apps, check the Trust internal apps box.",
+            "quote": "Only internal and third-party apps configured with a Trusted or Specific Google data access setting can access data.",
+            "note": "That applies only when your admin has Restricted the service; by default users can access any app. Only if your admin has restricted Gmail/high-risk scopes (see blocker). Corrected after adversarial audit (2026-10-19).",
             "check": {
               "result": "confirmed",
               "checkedAt": "2026-10-19",
-              "url": "https://support.google.com/a/answer/7281227?hl=en"
+              "url": "https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data"
             }
           }
         }
@@ -1198,23 +1199,6 @@
           }
         },
         {
-          "title": "100-user cap is lifetime and cannot be reset",
-          "symptom": "New users get \"Sign in with Google temporarily disabled\" once roughly 100 people have authorized the unverified app.",
-          "whatToDo": "Don't burn the cap on a beta launch. Keep production traffic on a separate project that you submit for verification, and check usage under Audience > OAuth user cap.",
-          "evidence": {
-            "status": "documented",
-            "sourceIds": [
-              "s2"
-            ],
-            "quote": "The user cap applies over the entire lifetime of the project, and it cannot be reset or changed.",
-            "check": {
-              "result": "confirmed",
-              "checkedAt": "2026-10-19",
-              "url": "https://support.google.com/cloud/answer/15549945?hl=en"
-            }
-          }
-        },
-        {
           "title": "Tester can't authorize at all",
           "symptom": "A listed test user gets an access blocked error instead of the warning screen.",
           "whatToDo": "Check the email is exactly the Google account they sign in with. If it's a Workspace account, their admin may block unverified third-party apps; if they use Advanced Protection, most non-Google apps are blocked.",
@@ -1747,7 +1731,7 @@
         },
         {
           "id": "pub-own-callback",
-          "phase": "configure",
+          "phase": "prepare",
           "title": "Route the OAuth callback through your own domain",
           "detail": "Google verification requires you to own every domain in the client configuration, and Composio's default callback lives on `backend.composio.dev`. Composio supports proxying the callback: register `https://yourdomain.com/api/composio-redirect` as the redirect URI, have that endpoint 302-redirect (query string intact) to Composio's callback, and set the same custom URI in your Composio auth config.",
           "actor": "both",
@@ -2098,7 +2082,7 @@
         {
           "title": "Verification rejected: scope too broad or justification thin",
           "symptom": "Email from the OAuth review team asking you to use a narrower scope, or a rejection of the data-access request.",
-          "whatToDo": "For each scope, name the exact user-facing feature, the API methods it calls, and why the next-narrower scope fails (e.g. why gmail.metadata or gmail.send is not enough). Drop any scope for features you haven't shipped. Reply to the same email thread and resubmit.",
+          "whatToDo": "For each scope, name the exact user-facing feature, the API methods it calls, and why the next-narrower scope fails (e.g. why gmail.send or gmail.labels is not enough; note gmail.metadata is also restricted and still needs CASA). Drop any scope for features you haven't shipped. Reply to the same email thread and resubmit.",
           "evidence": {
             "status": "documented",
             "sourceIds": [
@@ -2149,14 +2133,19 @@
         {
           "title": "Composio's callback domain vs. Google's 'verify all authorized domains' rule",
           "symptom": "Brand / data-access verification flags an authorized domain you do not own (the Composio host in your redirect URI), or you cannot add your redirect URI without adding Composio's domain as an authorized domain.",
-          "whatToDo": "Before submitting, check whether Composio supports a redirect/callback on a domain you own (custom domain or a proxy endpoint on your site that forwards to Composio). Ask Composio support if unsure. Verify your own domain in Search Console.",
+          "whatToDo": "Register `https://<yourdomain>/api/composio-redirect` as the Google redirect URI. It must 302-redirect (keeping the query string) to `https://backend.composio.dev/api/v3/toolkits/auth/callback`. Set the same custom redirect URI on your Composio auth config, then verify `<yourdomain>` in Search Console. See the 'Route the OAuth callback through your own domain' step.",
           "evidence": {
-            "status": "unverified",
+            "status": "documented",
             "sourceIds": [
-              "s5",
-              "s10"
+              "c3"
             ],
-            "note": "Inference, not tested: Google says all domains used in client configuration must be authorized domains (s11) and that you must verify you own all authorized domains (s6). How this applies to a third-party callback host like Composio's is not documented by Google."
+            "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio",
+            "note": "Composio documents the proxy; that Google verification needs it follows from Google's rule that you must verify all authorized domains. Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication.md"
+            }
           }
         },
         {
@@ -2359,10 +2348,10 @@
             24
           ],
           "waitDays": [
-            3,
-            21
+            14,
+            42
           ],
-          "note": "Hands-on: homepage, privacy policy, domain verification, justification, demo video. Wait: Google's non-guaranteed estimates are 2-3 business days for brand and 10 business days for sensitive scope verification; back-and-forth with reviewers commonly extends this."
+          "note": "Hands-on: homepage, privacy policy, domain verification, justification, demo video. Wait: brand verification (Google: 2-3 business days) must finish before the sensitive-scope review (Google: 10 business days) starts, so about 3 weeks minimum; reviewer back-and-forth commonly extends this. Corrected after adversarial audit (2026-10-19)."
         },
         "evidence": {
           "status": "unverified",
@@ -2703,7 +2692,7 @@
         },
         {
           "id": "send-own-callback",
-          "phase": "configure",
+          "phase": "prepare",
           "title": "Route the OAuth callback through your own domain",
           "detail": "Google verification requires you to own every domain in the client configuration, and Composio's default callback lives on `backend.composio.dev`. Composio supports proxying the callback: register `https://yourdomain.com/api/composio-redirect` as the redirect URI, have that endpoint 302-redirect (query string intact) to Composio's callback, and set the same custom URI in your Composio auth config.",
           "actor": "both",
@@ -2999,7 +2988,7 @@
         {
           "title": "Verification rejected: scope too broad or justification thin",
           "symptom": "Email from the OAuth review team asking you to use a narrower scope, or a rejection of the data-access request.",
-          "whatToDo": "For each scope, name the exact user-facing feature, the API methods it calls, and why the next-narrower scope fails (e.g. why gmail.metadata or gmail.send is not enough). Drop any scope for features you haven't shipped. Reply to the same email thread and resubmit.",
+          "whatToDo": "For each scope, name the exact user-facing feature, the API methods it calls, and why the next-narrower scope fails (e.g. why gmail.send or gmail.labels is not enough; note gmail.metadata is also restricted and still needs CASA). Drop any scope for features you haven't shipped. Reply to the same email thread and resubmit.",
           "evidence": {
             "status": "documented",
             "sourceIds": [
@@ -3016,14 +3005,19 @@
         {
           "title": "Composio's callback domain vs. Google's 'verify all authorized domains' rule",
           "symptom": "Brand / data-access verification flags an authorized domain you do not own (the Composio host in your redirect URI), or you cannot add your redirect URI without adding Composio's domain as an authorized domain.",
-          "whatToDo": "Before submitting, check whether Composio supports a redirect/callback on a domain you own (custom domain or a proxy endpoint on your site that forwards to Composio). Ask Composio support if unsure. Verify your own domain in Search Console.",
+          "whatToDo": "Register `https://<yourdomain>/api/composio-redirect` as the Google redirect URI. It must 302-redirect (keeping the query string) to `https://backend.composio.dev/api/v3/toolkits/auth/callback`. Set the same custom redirect URI on your Composio auth config, then verify `<yourdomain>` in Search Console. See the 'Route the OAuth callback through your own domain' step.",
           "evidence": {
-            "status": "unverified",
+            "status": "documented",
             "sourceIds": [
-              "s5",
-              "s10"
+              "c3"
             ],
-            "note": "Inference, not tested: Google says all domains used in client configuration must be authorized domains (s11) and that you must verify you own all authorized domains (s6). How this applies to a third-party callback host like Composio's is not documented by Google."
+            "quote": "This endpoint receives the OAuth callback and immediately 302-redirects it to Composio",
+            "note": "Composio documents the proxy; that Google verification needs it follows from Google's rule that you must verify all authorized domains. Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication.md"
+            }
           }
         },
         {
@@ -3235,6 +3229,13 @@
       "url": "https://docs.composio.dev/docs/authentication/white-labeling-authentication.md",
       "title": "Composio docs — White-labeling authentication",
       "kind": "composio",
+      "accessed": "2026-10-19"
+    },
+    {
+      "id": "s19",
+      "url": "https://knowledge.workspace.google.com/admin/apps/control-which-apps-access-google-workspace-data",
+      "title": "Google Workspace Admin Help — Control which apps access Google Workspace data",
+      "kind": "official",
       "accessed": "2026-10-19"
     }
   ]

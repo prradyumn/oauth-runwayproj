@@ -174,6 +174,14 @@
             ],
             "note": "No domain verification step appears for OAuth Apps. Inferred from absence."
           }
+        },
+        "customerAdminApproval": {
+          "value": false,
+          "evidence": {
+            "status": "unverified",
+            "sourceIds": [],
+            "note": "Only if you need private repos of an org that restricts OAuth apps; then that org's owner must approve. Corrected after adversarial audit (2026-10-19)."
+          }
         }
       },
       "timeline": {
@@ -1020,6 +1028,24 @@
               "url": "https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api"
             }
           }
+        },
+        {
+          "title": "Org IP allow list blocks Composio's servers",
+          "symptom": "403 errors on an org's resources even after the org owner approved the app.",
+          "whatToDo": "Enterprise orgs with an IP allow list also apply it to OAuth app tokens, and the 'allow GitHub Apps' exemption doesn't cover OAuth apps. The org admin must add Composio's egress IPs to the allow list (ask Composio support for them).",
+          "evidence": {
+            "status": "documented",
+            "sourceIds": [
+              "s16"
+            ],
+            "quote": "The IP allow list applies to users with any role or access, including enterprise and organization owners",
+            "note": "Composio's egress IP list is not public in the docs we read. Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization"
+            }
+          }
         }
       ]
     }
@@ -1169,6 +1195,13 @@
       "url": "https://docs.composio.dev/toolkits/github.md",
       "title": "Composio docs — GitHub toolkit",
       "kind": "composio",
+      "accessed": "2026-10-19"
+    },
+    {
+      "id": "s16",
+      "url": "https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization",
+      "title": "GitHub Docs — Managing allowed IP addresses for your organization",
+      "kind": "official",
       "accessed": "2026-10-19"
     }
   ]

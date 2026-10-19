@@ -191,13 +191,14 @@
           }
         },
         "customerAdminApproval": {
-          "value": true,
+          "value": false,
           "evidence": {
             "status": "documented",
             "sourceIds": [
               "s3"
             ],
             "quote": "Some workspaces will restrict app installation so that only workspace administrators can provide authorization.",
+            "note": "Conditional, and in this scenario the admin is your own: only applies if your workspace has 'Require app approval' on (see blocker). Corrected after adversarial audit (2026-10-19).",
             "check": {
               "result": "confirmed",
               "checkedAt": "2026-10-19",
@@ -517,7 +518,7 @@
     },
     {
       "id": "distributed",
-      "label": "Public distribution to other workspaces (unlisted, no Marketplace)",
+      "label": "Public distribution, unlisted (pilots only: history reads 1/min)",
       "audience": "public",
       "description": "You turn on public distribution so customers' workspaces can install your app through Composio's OAuth flow. Slack does not review unlisted apps. However, new unlisted commercially distributed apps, and new installs of existing ones, have been limited since May 29, 2025 to 1 request per minute and 15 objects per call on conversations.history and conversations.replies. Slack's updated API terms also say the Marketplace is the only appropriate channel for commercial distribution. Some customer workspaces only allow Marketplace apps.",
       "scopes": [
@@ -693,7 +694,7 @@
           "id": "di-ratelimit-check",
           "phase": "prepare",
           "title": "Check whether your agent can live with the history rate limit",
-          "detail": "Unlisted distributed apps get **1 request/minute** and at most **15 messages per call** on `conversations.history` and `conversations.replies`. If your agent reads channel or thread history, plan for the Marketplace, or design the agent around Events API pushes instead of history reads.",
+          "detail": "Unlisted distributed apps get **1 request/minute** and at most **15 messages per call** on `conversations.history` and `conversations.replies`. If your agent reads channel or thread history, plan for the Marketplace, or design the agent around Events API pushes instead of history reads. The Real-time Search API (assistant.search.context) is also unavailable to unlisted apps.",
           "actor": "agent",
           "agentCan": "List which agent tools call conversations.history or conversations.replies and estimate how many calls each makes per minute.",
           "links": [
@@ -888,6 +889,24 @@
           }
         },
         {
+          "title": "Real-time Search API unavailable to unlisted apps",
+          "symptom": "assistant.search.context calls fail; the agent can't search workspace context.",
+          "whatToDo": "Slack's sanctioned way for agents to read context (RTS API, GA Feb 2026) works only for Marketplace-listed and internal apps. Plan to list in the Marketplace, or keep the agent internal.",
+          "evidence": {
+            "status": "documented",
+            "sourceIds": [
+              "s12"
+            ],
+            "quote": "The RTS API is available for directory-published apps and internal apps only.",
+            "note": "Corrected after adversarial audit (2026-10-19).",
+            "check": {
+              "result": "confirmed",
+              "checkedAt": "2026-10-19",
+              "url": "https://docs.slack.dev/apis/web-api/real-time-search-api"
+            }
+          }
+        },
+        {
           "title": "API terms point commercial apps to the Marketplace",
           "symptom": "You plan to sell to many customers using only an unlisted app.",
           "whatToDo": "Use unlisted distribution for pilots, and plan a Marketplace submission for commercial launch. Read the API Terms of Service yourself.",
@@ -989,9 +1008,9 @@
           "sensitivity": "sensitive"
         },
         {
-          "name": "search:read",
-          "purpose": "User scope. The Marketplace lists it as unsuitable. Leave it out of a Marketplace submission.",
-          "sensitivity": "restricted"
+          "name": "search:read.public",
+          "purpose": "Search via the Real-time Search API (assistant.search.context); Marketplace and internal apps only.",
+          "sensitivity": "sensitive"
         }
       ],
       "factors": {
@@ -1077,7 +1096,7 @@
               "s7"
             ],
             "quote": "You can help us review your app more quickly by providing us with a short video demo.",
-            "note": "Strongly recommended for new submissions. Required (video or staging app) when you later add scopes or new features.",
+            "note": "Recommended, not required: the audit proposed 'required', but the full passage frames the video as a way to speed review. Record one anyway.",
             "check": {
               "result": "confirmed",
               "checkedAt": "2026-10-19",
@@ -1218,7 +1237,7 @@
           "id": "mp-installs",
           "phase": "review",
           "title": "Reach 10 active workspace installs",
-          "detail": "Use unlisted distribution (see the distributed scenario) to get at least 10 active workspaces (used in the last 28 days, not sandboxes). Keep at least 10 for the whole review. Submissions below the threshold are blocked automatically.",
+          "detail": "Before submitting, the app needs at least 10 active workspaces (used in the last 28 days, not sandboxes) and at least 10 weekly active users. Slack has required this since July 2026. Recruit design partners through unlisted distribution first.",
           "actor": "human",
           "humanMust": "Recruit pilot customers and keep them active.",
           "links": [],
@@ -1532,6 +1551,13 @@
       "url": "https://docs.composio.dev/toolkits/slack.md",
       "title": "Composio docs — Slack toolkit",
       "kind": "composio",
+      "accessed": "2026-10-19"
+    },
+    {
+      "id": "s12",
+      "url": "https://docs.slack.dev/apis/web-api/real-time-search-api",
+      "title": "Slack docs — Real-time Search API",
+      "kind": "official",
       "accessed": "2026-10-19"
     }
   ]
