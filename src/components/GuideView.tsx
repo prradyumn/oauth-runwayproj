@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Guide, Scenario, Factors } from "@/lib/schema";
-import { assess, evidenceCounts, formatRange, TIERS } from "@/lib/rubric";
+import { assessFor, evidenceCounts, formatRange, TIERS } from "@/lib/rubric";
 import { ActorBadge, CopyButton, EvidenceChip, Md, MdBlock, TierChip, ACTOR } from "./ui";
 
 const AUDIENCE = { self: "Just you (testing)", internal: "Your own organization", public: "Any customer" } as const;
@@ -111,7 +111,7 @@ export default function GuideView({ guide }: { guide: Guide }) {
         <h2 className="text-sm font-medium text-muted">Difficulty depends on who connects and which scopes you need. Pick your situation:</h2>
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(220px, 100%), 1fr))` }}>
           {guide.scenarios.map((s) => {
-            const a = assess(s.factors);
+            const a = assessFor(guide, s);
             const active = s.id === scenario.id;
             return (
               <button
@@ -192,7 +192,7 @@ export default function GuideView({ guide }: { guide: Guide }) {
 }
 
 function ScenarioBody({ s, guide }: { s: Scenario; guide: Guide }) {
-  const a = assess(s.factors);
+  const a = assessFor(guide, s);
   const t = s.timeline;
   const actorCounts = { agent: 0, both: 0, human: 0 };
   s.steps.forEach((st) => actorCounts[st.actor]++);
@@ -213,6 +213,13 @@ function ScenarioBody({ s, guide }: { s: Scenario; guide: Guide }) {
           <ul className="text-sm space-y-1">
             {a.reasons.map((r, i) => <li key={i}>• {r}</li>)}
           </ul>
+          {a.possibleTier > a.tier && (
+            <div className="rounded-lg p-3 text-xs space-y-1" style={{ background: "var(--unv-bg)" }}>
+              <div className="flex items-center gap-2 flex-wrap"><span>Could be up to</span> <TierChip tier={a.possibleTier} /></div>
+              <div className="text-muted">The agent also claimed these, but no source quote confirmed them:</div>
+              <ul>{a.unconfirmed.map((r, i) => <li key={i}>• {r}</li>)}</ul>
+            </div>
+          )}
           <p className="text-[11px] text-muted">Computed by a fixed rubric from the requirements below — not an AI judgement.</p>
         </div>
 

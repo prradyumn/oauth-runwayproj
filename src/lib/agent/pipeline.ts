@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { Guide, type Evidence, type Factors, type Source, type Step } from "../schema";
-import { assess, TIERS } from "../rubric";
+import { assessFor, TIERS } from "../rubric";
 import { verifyGuide, httpFetcher, type PageFetcher } from "../verify";
 import { slugify } from "../store";
 import { COMPOSIO, LIBRARY_INDEX } from "../composio";
 import { askJSON, getModel } from "./llm";
 import { search, excerpt, type SearchHit } from "./search";
+import { crawlDocs } from "./crawl";
 import type { Emit } from "./events";
 import { runDemo } from "./demo";
 
@@ -48,7 +49,22 @@ const FACTOR_HELP: Record<(typeof FACTOR_KEYS)[number], string> = {
 };
 
 // ---------- lenient shapes for model output ----------
-const Q = { quote: z.string().nullish(), src: z.string().nullish() };
+// Small models drift from the requested shape (booleans in text fields, bare values instead of
+// {value, quote}). Accept the drift, and drop only the bad item, never a whole list.
+const str = z.unknown().transform((v) => (typeof v === "string" && v.trim() ? v : null));
+const Q = { quote: str, src: str };
+const items = <T extends z.ZodTypeAny>(item: T) =>
+  z.unknown().transform((v) => (Array.isArray(v) ? v : []).flatMap((x) => { const r = item.safeParse(x); return r.success ? [r.data as z.infer<T>] : []; }));
+const FactorIn = z.unknown().transform((v) => {
+  if (v === null || typeof v !== "object") return { value: (typeof v === "boolean" || typeof v === "number" ? v : null) as boolean | number | null, quote: null, src: null };
+  const o = v as Record<string, unknown>;
+  const val = o.value;
+  return {
+    value: (typeof val === "boolean" || typeof val === "number" ? val : val === "true" ? true : val === "false" ? false : null) as boolean | number | null,
+    quote: typeof o.quote === "string" && o.quote.trim() ? o.quote : null,
+    src: typeof o.src === "string" && o.src.trim() ? o.src : null,
+  };
+});
 const num = z.coerce.number().catch(0);
 const range = z.array(num).catch([0, 0]).transform((a) => [a[0] ?? 0, a[1] ?? a[0] ?? 0] as [number, number]);
 
@@ -60,6 +76,7 @@ const ResolveOut = z.object({
   docsUrl: z.string().catch(""),
   officialDomains: z.array(z.string()).catch([]),
   supportsOAuth: z.boolean().catch(true),
+  candidateUrls: z.array(z.string()).catch([]),
   notes: z.string().catch(""),
 });
 
@@ -73,10 +90,8 @@ const ClassifyOut = z.object({
         label: z.string().catch("Scenario"),
         audience: z.enum(["self", "internal", "public"]).catch("public"),
         description: z.string().catch(""),
-        scopes: z
-          .array(z.object({ name: z.string(), purpose: z.string().catch(""), sensitivity: z.enum(["basic", "sensitive", "restricted", "gated"]).catch("basic") }))
-          .catch([]),
-        factors: z.record(z.object({ value: z.union([z.boolean(), z.number(), z.null()]).catch(null), ...Q })).catch({}),
+        scopes: items(z.object({ name: z.string(), purpose: z.string().catch(""), sensitivity: z.enum(["basic", "sensitive", "restricted", "gated"]).catch("basic") })),
+        factors: z.record(FactorIn).catch({}),
         timeline: z
           .object({
             firstConnectionMinutes: range,
@@ -91,31 +106,27 @@ const ClassifyOut = z.object({
 });
 
 const PlanOut = z.object({
-  scenarios: z
-    .array(
-      z.object({
-        id: z.string(),
-        steps: z
-          .array(
-            z.object({
-              phase: z.enum(["prepare", "create", "configure", "connect", "review", "launch"]).catch("configure"),
-              title: z.string(),
-              detail: z.string().catch(""),
-              actor: z.enum(["agent", "human", "both"]).catch("human"),
-              agentCan: z.string().nullish(),
-              humanMust: z.string().nullish(),
-              url: z.string().nullish(),
-              values: z.array(z.object({ label: z.string(), value: z.string() })).catch([]),
-              estMinutes: z.coerce.number().nullish().catch(null),
-              ...Q,
-            }),
-          )
-          .catch([]),
-        blockers: z.array(z.object({ title: z.string(), symptom: z.string().catch(""), whatToDo: z.string().catch(""), ...Q })).catch([]),
-      }),
-    )
-    .catch([]),
-  artifacts: z.array(z.object({ title: z.string(), content: z.string() })).catch([]),
+  scenarios: items(
+    z.object({
+      id: z.string(),
+      steps: items(
+        z.object({
+          phase: z.enum(["prepare", "create", "configure", "connect", "review", "launch"]).catch("configure"),
+          title: z.string(),
+          detail: z.string().catch(""),
+          actor: z.enum(["agent", "human", "both"]).catch("human"),
+          agentCan: str,
+          humanMust: str,
+          url: str,
+          values: items(z.object({ label: z.string(), value: z.coerce.string() })),
+          estMinutes: z.coerce.number().nullish().catch(null),
+          ...Q,
+        }),
+      ),
+      blockers: items(z.object({ title: z.string(), symptom: z.string().catch(""), whatToDo: z.string().catch(""), ...Q })),
+    }),
+  ),
+  artifacts: items(z.object({ title: z.string(), content: z.string() })),
 });
 
 const isUrl = (s: string) => /^https?:\/\/|^[\w-]+\.[a-z]{2,}(\/|$)/i.test(s.trim());
@@ -139,7 +150,9 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
   const llm = deps?.model !== undefined ? deps.model : getModel();
   const search_ = deps?.search ?? search;
   const ask = deps?.askJSON ?? ((sys: string, prompt: string, e: Emit, max?: number) => askJSON(llm!.model, sys, prompt, e, max));
-  if (!llm || (!deps?.search && !process.env.TAVILY_API_KEY)) {
+  // Search API is optional: with no Tavily key the agent crawls the provider's docs itself.
+  const useSearch = !!deps?.search || !!process.env.TAVILY_API_KEY;
+  if (!llm) {
     emit({ type: "meta", mode: "demo" });
     return runDemo(input, emit);
   }
@@ -149,16 +162,17 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
 
   // ---------- 1. resolve ----------
   emit({ type: "stage", stage: "resolve", status: "start" });
-  const q0 = isUrl(input) ? `${new URL(validUrl(input)!).hostname} OAuth 2.0 API developer documentation` : `${input} OAuth 2.0 API developer documentation create app`;
-  const first = await search_(q0, { maxResults: 6 });
+  const first = useSearch
+    ? await search_(isUrl(input) ? `${new URL(validUrl(input)!).hostname} OAuth 2.0 API developer documentation` : `${input} OAuth 2.0 API developer documentation create app`, { maxResults: 6 })
+    : [];
   const resolved = ResolveOut.parse(
     await ask(
-      "You identify software products and their official developer documentation. Use only the search results given.",
-      `User asked about: "${input}"\n\nSearch results:\n${first
-        .map((h, i) => `[${i + 1}] ${h.title}\n${h.url}\n${h.content.slice(0, 300)}`)
-        .join("\n\n")}\n\nReturn JSON: {"appName": string, "website": url, "category": string (e.g. "CRM", "Email", "Developer tools"), "developerPortalUrl": url where developers create apps, "docsUrl": url of OAuth docs, "officialDomains": [bare hostnames that host this provider's OWN docs, e.g. "developers.hubspot.com"], "supportsOAuth": boolean (does it offer OAuth 2.0 for third-party apps?), "notes": string}`,
+      "You identify software products and their official developer documentation." + (useSearch ? " Use only the search results given." : " Use your own knowledge; every URL you give will be fetched to check it exists, and wrong URLs are discarded."),
+      `User asked about: "${input}"\n\n${
+        useSearch ? `Search results:\n${first.map((h, i) => `[${i + 1}] ${h.title}\n${h.url}\n${h.content.slice(0, 300)}`).join("\n\n")}\n\n` : ""
+      }Return JSON: {"appName": string, "website": url, "category": string (e.g. "CRM", "Email", "Developer tools"), "developerPortalUrl": url where developers create apps, "docsUrl": url of OAuth docs, "officialDomains": [bare hostnames that host this provider's OWN developer docs, e.g. "developers.hubspot.com"], "candidateUrls": [up to 8 full URLs of official pages about: creating an OAuth app, OAuth scopes, the app review / verification / marketplace publishing process, API access tiers or partner programs], "supportsOAuth": boolean (does it offer OAuth 2.0 for third-party apps?), "notes": string}`,
       emit,
-      600,
+      900,
     ),
   );
   if (!resolved.supportsOAuth) {
@@ -178,13 +192,19 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
   ];
   const runQueries = (incl?: string[]) =>
     Promise.all(queries.map((q) => search_(q, { includeDomains: incl, maxResults: 3, raw: true }).catch(() => [] as SearchHit[])));
-  let batches = await runQueries(domains);
-  if (batches.flat().length < 3) {
-    emit({ type: "log", message: "Few results on official domains — widening search." });
-    batches = await runQueries(undefined);
+  let hits: SearchHit[];
+  if (useSearch) {
+    let batches = await runQueries(domains);
+    if (batches.flat().length < 3) {
+      emit({ type: "log", message: "Few results on official domains — widening search." });
+      batches = await runQueries(undefined);
+    }
+    const seen = new Set<string>();
+    hits = batches.flat().filter((h) => h.raw.length > 200 && !seen.has(h.url) && seen.add(h.url)).slice(0, 8);
+  } else {
+    const extra = [resolved.docsUrl, resolved.developerPortalUrl].map(validUrl).filter((u): u is string => !!u && new URL(u).pathname.length > 1);
+    hits = await crawlDocs({ app, domains, candidates: [...resolved.candidateUrls, ...extra] }, emit);
   }
-  const seen = new Set<string>();
-  const hits = batches.flat().filter((h) => h.raw.length > 200 && !seen.has(h.url) && seen.add(h.url)).slice(0, 8);
   if (!hits.length) throw new Error(`Couldn't find readable documentation for ${app}.`);
 
   const sources: Source[] = hits.map((h, i) => ({
@@ -202,17 +222,18 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
 
   const RULES = `Rules:
 - Use ONLY the excerpts. Never invent requirements, numbers, or URLs.
-- When an excerpt supports a fact, set "quote" to a sentence copied EXACTLY, character for character, from that excerpt (8-30 words) and "src" to its id like "s2". Otherwise set quote and src to null.
-- Code will check every quote against the real page; paraphrased quotes are discarded.`;
+- When an excerpt supports a fact, set "quote" to a full sentence copied EXACTLY, character for character, from that excerpt (8-30 words) that states the fact in words (not a table row, code sample or URL), and "src" to its id like "s2". Otherwise set quote and src to null.
+- Code will check every quote against the real page; paraphrased quotes are discarded.
+- Set a requirement to true only if an excerpt states it for THIS provider. Never carry over rules you know from other providers (e.g. Google's 100-user cap or CASA). If unsure, use false/null and add an open question.`;
 
   // ---------- 3. classify ----------
   emit({ type: "stage", stage: "classify", status: "start" });
   const classified = ClassifyOut.parse(
     await ask(
       `You analyse what it takes for a developer to create an OAuth app with a provider and get it approved, for an AI agent product using Composio as the OAuth client. ${RULES}`,
-      `Provider: ${app}\n\nExcerpts:\n${corpus}\n\nDifficulty depends on scopes x audience. Define ${isGroq ? "2" : "2-3"} scenarios, always including (a) the developer's own account/testing and (b) public production use with the scopes an AI agent would typically need. For each scenario give these factors as {"value", "quote", "src"}:\n${FACTOR_KEYS.map((k) => `- ${k}: ${FACTOR_HELP[k]}`).join("\n")}\n\nReturn JSON: {"summary": "2-3 honest sentences: how hard, how long, main blocker", "openQuestions": [things the excerpts did not settle], "scenarios": [{"id": kebab-case, "label", "audience": "self"|"internal"|"public", "description", "scopes": [{"name","purpose","sensitivity":"basic"|"sensitive"|"restricted"|"gated"}], "factors": {...}, "timeline": {"firstConnectionMinutes":[min,max], "productionHandsOnHours":[min,max], "productionWaitDays":[min,max] or null if no provider wait, "note"}}]}`,
+      `Provider: ${app}\n\nExcerpts:\n${corpus}\n\nDifficulty depends on scopes x audience. Define ${isGroq ? "2" : "2-3"} scenarios, always including (a) the developer's own account/testing and (b) public production use with the scopes an AI agent would typically need. For each scenario give EVERY one of these factors as an object, e.g. "reviewRequired": {"value": true, "quote": "<exact sentence>", "src": "s3"}:\n${FACTOR_KEYS.map((k) => `- ${k}: ${FACTOR_HELP[k]}`).join("\n")}\n\nReturn JSON: {"summary": "2-3 honest sentences: how hard, how long, main blocker", "openQuestions": [things the excerpts did not settle], "scenarios": [{"id": kebab-case, "label", "audience": "self"|"internal"|"public", "description", "scopes": [{"name","purpose","sensitivity":"basic"|"sensitive"|"restricted"|"gated"}], "factors": {...}, "timeline": {"firstConnectionMinutes":[min,max], "productionHandsOnHours":[min,max], "productionWaitDays":[min,max] or null if no provider wait, "note"}}]}`,
       emit,
-      isGroq ? 2200 : 4000,
+      isGroq ? 3200 : 4000,
     ),
   );
   const usedIds = new Set<string>();
@@ -232,9 +253,9 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
       `You write precise, actionable setup guides for developers. Label each step's actor: "agent" (an AI agent can do it alone: drafting text, generating config, checking settings, testing a connection), "human" (login, CAPTCHA, legal/business attestation, payment, recording video, submitting to the provider), or "both" (agent prepares, human submits). ${RULES}`,
       `Provider: ${app}. Developer portal: ${resolved.developerPortalUrl}. The redirect URI to register is Composio's: ${redirect}\n\nScenarios:\n${classified.scenarios
         .map((s) => `- ${s.id}: ${s.label} — ${s.description}; scopes: ${s.scopes.map((x) => x.name).join(", ")}`)
-        .join("\n")}\n\nExcerpts:\n${corpus}\n\nReturn JSON: {"scenarios": [{"id", "steps": [{"phase":"prepare"|"create"|"configure"|"connect"|"review"|"launch", "title", "detail" (1-3 sentences, concrete field names), "actor", "agentCan", "humanMust", "url" (only if from excerpts or the portal URL above), "values": [{"label","value"}] exact values to paste, "estMinutes", "quote", "src"}], "blockers": [{"title","symptom","whatToDo","quote","src"}]}], "artifacts": [{"title","content"}] (1-2 drafts an agent can write now, e.g. scope justification or app description)}. ${isGroq ? "Max 7 steps and 3 blockers per scenario. Be concise." : "4-10 steps and 2-5 blockers per scenario."}`,
+        .join("\n")}\n\nExcerpts:\n${corpus}\n\nReturn JSON: {"scenarios": [{"id", "steps": [{"phase":"prepare"|"create"|"configure"|"connect"|"review"|"launch", "title", "detail" (1-3 sentences, concrete field names), "actor", "agentCan": text or null, "humanMust": text or null, "url" (only if from excerpts or the portal URL above), "values": [{"label","value"}] exact values to paste, "estMinutes", "quote", "src"}], "blockers": [{"title","symptom","whatToDo","quote","src"}]}], "artifacts": [{"title","content"}] (1-2 drafts an agent can write now, e.g. scope justification or app description)}. ${isGroq ? "Max 6 steps and 3 blockers per scenario, 1 short artifact. Keep detail to 1-2 sentences. Be concise." : "4-10 steps and 2-5 blockers per scenario."}`,
       emit,
-      isGroq ? 2600 : 6000,
+      isGroq ? 4800 : 6000,
     ),
   );
   emit({ type: "stage", stage: "plan", status: "done", detail: `${planned.scenarios.reduce((n, s) => n + s.steps.length, 0)} steps, ${planned.scenarios.reduce((n, s) => n + s.blockers.length, 0)} blockers` });
@@ -353,7 +374,7 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
 
   // ---------- 6. score (code) ----------
   emit({ type: "stage", stage: "score", status: "start" });
-  const tiers = guide.scenarios.map((s) => `${s.label}: ${TIERS[assess(s.factors).tier].label}`);
+  const tiers = guide.scenarios.map((s) => `${s.label}: ${TIERS[assessFor(guide, s).tier].label}`);
   emit({ type: "stage", stage: "score", status: "done", detail: tiers.join(" · ") });
   return guide;
 }

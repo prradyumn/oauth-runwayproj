@@ -64,7 +64,9 @@ The hard part is **rarely the code**. It's the approvals, and which of them appl
 | **Three evidence labels: ✅ tested / 📄 documented / ❓ unverified** | Being honest about uncertainty is part of the product. All time estimates are marked unverified unless someone actually timed them. |
 | **Quotes are checked in code** ([src/lib/verify.ts](src/lib/verify.ts)) | The LLM proposes a quote plus a source. The verifier fetches the page and downgrades the claim if the quote isn't there. The model never sets its own evidence status. |
 | **Every step is labelled 🤖 agent / 🤝 agent prepares, you submit / 👤 you**, and agents produce **drafts** (manifests, scope justifications, Limited Use text, listing copy) | This answers "what can an agent do for me, and where do I take over?" |
-| **Free-tier stack**: Groq (Qwen3.8-27B) or Gemini via the Vercel AI SDK, Tavily search | ₹0 to run. The free tier's small token budget pushed a good design choice: the model sees only short, relevant excerpts of official docs, so its context is small and cited. |
+| **Free-tier stack, no credit card**: Groq `openai/gpt-oss-120b` (Gemini as a fallback) via the Vercel AI SDK, and **no search API** | ₹0 to run. The search APIs needed a card, and keyless search engines block bots, so the agent **crawls the provider's docs itself** (next row). The 8k tokens-per-minute budget pushed another good choice: the model sees only short, relevant excerpts of official docs. |
+| **Built-in docs crawler** ([src/lib/agent/crawl.ts](src/lib/agent/crawl.ts)) | The model suggests the docs domain and likely URLs. Code **fetches every suggestion** and drops the ones that don't exist. In testing, the model invented 6–8 of its ~8 URLs for Zoom, and none survived. The crawler probes `developers.`/`docs.` hosts, reads the sitemap and `llms.txt`, ranks pages by topic (create / review / scopes / auth), and uses Jina Reader (free, no key) for JS-only pages. Tavily is used instead if a key is set. |
+| **In agent-generated guides, only evidence counts toward difficulty** | A small model over-claims. On Xero it marked security assessment, business verification, a demo video and "a 100-user cap" (Google's rule) as required, with no source. Now a requirement raises the tier only if its quote was confirmed. Unconfirmed claims are shown as "could be up to <tier>". Curated guides count reviewed unverified items. |
 | **Shareable everywhere**: permalinks per scenario (`/guides/gmail#testing`), Markdown export, and a JSON API | Developers paste guides into tickets. Agent builders can call `/api/guides/:slug` from their own agents. |
 | **No database** | Curated guides are JSON in the repo, so they're reviewable in PRs. Generated guides go to Vercel Blob, or a local folder in dev. |
 
@@ -72,8 +74,9 @@ The hard part is **rarely the code**. It's the approvals, and which of them appl
 
 ```
 input ("zoom.us")
- → resolve   LLM picks the provider, official docs domains, portal URL      (from search results)
- → research  4 targeted searches restricted to official domains; keep page text
+ → resolve   LLM names the provider, docs domains, portal and candidate URLs
+ → research  CODE: verify candidate URLs exist, probe docs hosts, read sitemap/llms.txt,
+             rank pages by topic, fetch (direct or Jina Reader); keep full page text
  → classify  LLM: scenarios + requirement facts, each with {quote, source}  (excerpts only)
  → plan      LLM: steps, blockers, agent/human labels, drafts
  → verify    CODE: each quote searched on its page → documented or downgraded
@@ -81,7 +84,16 @@ input ("zoom.us")
  → save      shareable /guides/<slug>, streamed progress to the browser (NDJSON)
 ```
 
-The stages are visible live on `/generate`. If a free-tier rate limit hits, the agent says so and waits rather than failing. With no API keys the app runs in **demo mode**: the library works fully, and generation produces a placeholder that is clearly labelled as one.
+The stages are visible live on `/generate`. If a free-tier rate limit hits, the agent says so and waits rather than failing. If the model's JSON is cut off at the token limit, it's repaired by keeping every complete item. Small-model shape drift (booleans in text fields, bare values instead of objects) drops only the bad item, never a whole list.
+
+**Live runs on apps outside the library** (free tier, Oct 2026):
+
+| App | Time | Pages read | Quotes confirmed / downgraded | Result |
+|---|---|---|---|---|
+| Zoom | 61 s | 8 (create app, submit for review, review guidelines, scopes) | 16 / 2 | Instant → Review for production |
+| Calendly | 43 s | 8 | 11 / 0 | Instant (docs mention no review; flagged as an open question) |
+| Notion | ~60 s | 6 | 7 / 1 | Instant → Review for production |
+| Xero | 22–39 s | 8 | 4–8 / 3 | Instant, could be up to Gated (partner program claimed, but the quote wasn't confirmed) | With no API keys the app runs in **demo mode**: the library works fully, and generation produces a placeholder that is clearly labelled as one.
 
 ## Evidence & verification (summary)
 
@@ -100,7 +112,7 @@ npm run dev                  # http://localhost:3000
 
 | Variable | Needed for | Free key |
 |---|---|---|
-| `GROQ_API_KEY` (+ optional `GROQ_MODEL`, default `qwen/qwen3.8-27b`) | live generation (primary LLM) | console.groq.com |
+| `GROQ_API_KEY` (+ optional `GROQ_MODEL`, default `openai/gpt-oss-120b`) | live generation (primary LLM) | console.groq.com |
 | `GOOGLE_GENERATIVE_AI_API_KEY` (+ `GEMINI_MODEL`) | live generation (fallback LLM, used if Groq is unset) | aistudio.google.com |
 | `TAVILY_API_KEY` | web research | app.tavily.com |
 | `BLOB_READ_WRITE_TOKEN` | persisting generated guides on Vercel | Vercel → Storage → Blob |
@@ -116,6 +128,7 @@ Scripts:
 
 - **Time ranges are estimates** unless marked tested. Providers rarely publish review SLAs.
 - **Live guides aren't reviewed by a person.** Free-tier models are weaker than frontier models, and unverified items are leads, not facts. The verifier catches invented quotes, but it can't catch a correct quote that's been misread.
+- **Discovery without a search engine is incomplete.** The crawler can only read pages it can find from the docs sitemap and links. Two runs on the same app can read different pages, and a key policy page can be missed. For example, one Xero run missed the page on Xero's connection limit for uncertified apps. Evidence gating keeps the result honest rather than complete. Adding a search key (Tavily) or a frontier model improves coverage without code changes.
 - **JS-rendered docs** can't be checked with a plain fetch. They're flagged "not auto-checked" rather than trusted.
 - **No approvals were completed** and no paid accounts were used. Review-stage claims come from documentation, not experience.
 - **Composio managed-app status** comes from a snapshot of the directory (Oct 2026) for apps outside the library.

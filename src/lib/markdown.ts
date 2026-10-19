@@ -1,5 +1,5 @@
 import type { Evidence, Guide, Scenario } from "./schema";
-import { assess, formatRange, TIERS } from "./rubric";
+import { assessFor, formatRange, TIERS } from "./rubric";
 
 const badge: Record<Evidence["status"], string> = { tested: "✅ tested", documented: "📄 documented", unverified: "❓ unverified" };
 const actor = { agent: "🤖 Agent", human: "👤 You", both: "🤝 Agent drafts, you submit" } as const;
@@ -10,14 +10,14 @@ function cite(e: Evidence, g: Guide): string {
 }
 
 function scenarioMd(s: Scenario, g: Guide): string {
-  const a = assess(s.factors);
+  const a = assessFor(g, s);
   const t = s.timeline;
   const out = [
     `## Scenario: ${s.label}`,
     "",
     s.description,
     "",
-    `**Difficulty:** ${TIERS[a.tier].label} (tier ${a.tier}/4). ${a.reasons.join("; ")}.`,
+    `**Difficulty:** ${TIERS[a.tier].label} (tier ${a.tier}/4). ${a.reasons.join("; ")}.${a.possibleTier > a.tier ? ` Could be up to ${TIERS[a.possibleTier].label} if unconfirmed items hold: ${a.unconfirmed.join("; ")}.` : ""}`,
     "",
     `- **First working connection:** ${formatRange(t.firstConnection.handsOnMinutes, "minutes")} hands-on. ${t.firstConnection.note}`,
     `- **Production-ready:** ${formatRange(t.production.handsOnHours, "hours")} hands-on${t.production.waitDays ? ` + ${formatRange(t.production.waitDays, "days")} waiting on the provider` : ", no provider wait"}. ${t.production.note}`,

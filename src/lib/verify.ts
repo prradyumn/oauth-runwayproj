@@ -38,6 +38,7 @@ export function htmlToText(html: string): string {
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<\/(p|li|h[1-6]|div|tr|section|article)>|<br\s*\/?>/gi, "\n\n")
     .replace(/<[^>]+>/g, " ");
 }
 

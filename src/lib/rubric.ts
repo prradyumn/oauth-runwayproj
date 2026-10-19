@@ -15,37 +15,57 @@ export const TIERS: Record<Tier, { label: string; short: string; blurb: string }
   4: { label: "Gated", short: "Gated", blurb: "Access depends on a partner application or paid tier that can be refused." },
 };
 
-export type Assessment = { tier: Tier; reasons: string[] };
+export type Assessment = {
+  tier: Tier;
+  reasons: string[];
+  /** Agent guides only: requirements the model claimed without a confirmed quote. */
+  unconfirmed: string[];
+  /** The tier if every unconfirmed claim turned out true (agent guides only). */
+  possibleTier: Tier;
+};
 
-export function assess(f: Factors): Assessment {
+/**
+ * @param requireEvidence  When true (agent-generated guides), a requirement only raises the
+ *   tier if it is backed by a documented/tested quote. Unbacked claims are reported separately
+ *   as "could be up to" — so an over-eager model can't make an app look harder than the sources say.
+ */
+export function assess(f: Factors, requireEvidence = false): Assessment {
   const reasons: string[] = [];
+  const unconfirmed: string[] = [];
   let tier: Tier = 0;
-  const bump = (t: Tier, why: string) => {
+  let possibleTier: Tier = 0;
+  const backed = (k: keyof Factors) => !requireEvidence || f[k]?.evidence.status !== "unverified";
+  const rule = (k: keyof Factors, active: boolean, t: Tier | null, why: string) => {
+    if (!active) return;
+    if (t !== null && t > possibleTier) possibleTier = t;
+    if (!backed(k)) return void unconfirmed.push(why);
     reasons.push(why);
-    if (t > tier) tier = t;
+    if (t !== null && t > tier) tier = t;
   };
 
-  if (!f.selfServeCreate.value) bump(4, "You cannot create the app self-serve");
-  if (f.partnerApproval.value) bump(4, "Needs a partner/program application that can be refused");
-  if (f.paidAccessRequired.value) bump(4, "API access requires a paid tier");
-  if (f.securityAssessment.value) bump(3, "Third-party security assessment required");
-  if (f.businessVerification.value) bump(3, "Business/legal entity verification required");
-  if (f.reviewRequired.value) bump(2, "Provider review required before this audience can connect");
-  if (f.demoVideoRequired.value) reasons.push("Demo video needed for review");
-  if (f.domainVerification.value) reasons.push("You must prove you own your domain");
-  if (f.privacyPolicyRequired.value) reasons.push("Public privacy policy URL required");
-  if (f.customerAdminApproval?.value) bump(1, "Your users' org admins may have to approve the app first");
-  if (f.userCapBeforeReview.value != null) bump(1, `Capped at ${f.userCapBeforeReview.value} users until reviewed`);
+  rule("selfServeCreate", !f.selfServeCreate.value, 4, "You cannot create the app self-serve");
+  rule("partnerApproval", f.partnerApproval.value, 4, "Needs a partner/program application that can be refused");
+  rule("paidAccessRequired", f.paidAccessRequired.value, 4, "API access requires a paid tier");
+  rule("securityAssessment", f.securityAssessment.value, 3, "Third-party security assessment required");
+  rule("businessVerification", f.businessVerification.value, 3, "Business/legal entity verification required");
+  rule("reviewRequired", f.reviewRequired.value, 2, "Provider review required before this audience can connect");
+  rule("demoVideoRequired", f.demoVideoRequired.value, null, "Demo video needed for review");
+  rule("domainVerification", f.domainVerification.value, null, "You must prove you own your domain");
+  rule("privacyPolicyRequired", f.privacyPolicyRequired.value, null, "Public privacy policy URL required");
+  rule("customerAdminApproval", !!f.customerAdminApproval?.value, 1, "Your users' org admins may have to approve the app first");
+  rule("userCapBeforeReview", f.userCapBeforeReview.value != null, 1, `Capped at ${f.userCapBeforeReview.value} users until reviewed`);
 
-  if (reasons.length === 0) reasons.push("Create the app, paste credentials, connect");
-  return { tier, reasons };
+  if (reasons.length === 0) reasons.push(unconfirmed.length ? "No requirement confirmed by a source yet" : "Create the app, paste credentials, connect");
+  if (possibleTier < tier) possibleTier = tier;
+  return { tier, reasons, unconfirmed, possibleTier };
 }
 
-export const assessScenario = (s: Scenario) => assess(s.factors);
+/** Curated guides were reviewed, so their unverified items count; agent guides need evidence. */
+export const assessFor = (g: Pick<Guide, "origin">, s: Scenario) => assess(s.factors, g.origin === "agent");
 
 /** Range of tiers across a guide's scenarios, for library cards. */
 export function guideTierRange(g: Guide): [Tier, Tier] {
-  const tiers = g.scenarios.map((s) => assess(s.factors).tier);
+  const tiers = g.scenarios.map((s) => assessFor(g, s).tier);
   return [Math.min(...tiers) as Tier, Math.max(...tiers) as Tier];
 }
 

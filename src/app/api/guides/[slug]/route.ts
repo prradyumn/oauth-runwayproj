@@ -1,6 +1,6 @@
 import { getGuide } from "@/lib/store";
 import { guideToMarkdown } from "@/lib/markdown";
-import { assess, TIERS } from "@/lib/rubric";
+import { assessFor, TIERS } from "@/lib/rubric";
 
 /**
  * Machine-readable guides for agent builders.
@@ -21,8 +21,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   return Response.json({
     ...guide,
     difficulty: guide.scenarios.map((s) => {
-      const a = assess(s.factors);
-      return { scenarioId: s.id, tier: a.tier, label: TIERS[a.tier].label, reasons: a.reasons };
+      const a = assessFor(guide, s);
+      return { scenarioId: s.id, tier: a.tier, label: TIERS[a.tier].label, reasons: a.reasons, unconfirmed: a.unconfirmed, possibleTier: a.possibleTier };
     }),
   });
 }

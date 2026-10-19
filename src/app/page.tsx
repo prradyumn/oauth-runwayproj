@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listCurated, listGenerated, slugify } from "@/lib/store";
-import { assess, evidenceCounts, formatRange, guideTierRange, TIERS, type Tier } from "@/lib/rubric";
+import { assessFor, evidenceCounts, formatRange, guideTierRange, TIERS, type Tier } from "@/lib/rubric";
 import { LIBRARY_INDEX } from "@/lib/composio";
 import type { Guide } from "@/lib/schema";
 import SearchBox from "@/components/SearchBox";
@@ -13,8 +13,8 @@ const ORDER = ["github", "slack", "hubspot", "linkedin", "gmail"];
 function GuideCard({ g }: { g: Guide }) {
   const [lo, hi] = guideTierRange(g);
   const c = evidenceCounts(g);
-  const easiest = g.scenarios.reduce((a, b) => (assess(a.factors).tier <= assess(b.factors).tier ? a : b));
-  const hardest = g.scenarios.reduce((a, b) => (assess(a.factors).tier >= assess(b.factors).tier ? a : b));
+  const easiest = g.scenarios.reduce((a, b) => (assessFor(g, a).tier <= assessFor(g, b).tier ? a : b));
+  const hardest = g.scenarios.reduce((a, b) => (assessFor(g, a).tier >= assessFor(g, b).tier ? a : b));
   return (
     <Link href={`/guides/${g.slug}`} className="card p-4 hover:bg-surface-2 transition flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
