@@ -3,7 +3,7 @@ import { guideTierRange, TIERS } from "@/lib/rubric";
 
 /** GET /api/guides -> index of all guides (curated + generated). */
 export async function GET() {
-  const guides = [...(await listCurated()), ...(await listGenerated())];
+  const guides = [...(await listCurated()), ...(await listGenerated()).filter((g) => !g.slug.startsWith("demo-"))];
   return Response.json(
     guides.map((g) => {
       const [lo, hi] = guideTierRange(g);
