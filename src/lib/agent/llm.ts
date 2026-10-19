@@ -11,7 +11,7 @@ import type { Emit } from "./events";
 
 export function getModel(): { model: LanguageModelV1; name: string } | null {
   if (process.env.GROQ_API_KEY) {
-    const id = process.env.GROQ_MODEL || "qwen/qwen3-32b";
+    const id = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
     return { model: createGroq({ apiKey: process.env.GROQ_API_KEY })(id), name: `Groq · ${id}` };
   }
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {

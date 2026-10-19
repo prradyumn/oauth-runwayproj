@@ -64,7 +64,7 @@ The hard part is **rarely the code**. It's the approvals, and which of them appl
 | **Three evidence labels: ✅ tested / 📄 documented / ❓ unverified** | Being honest about uncertainty is part of the product. All time estimates are marked unverified unless someone actually timed them. |
 | **Quotes are checked in code** ([src/lib/verify.ts](src/lib/verify.ts)) | The LLM proposes a quote plus a source. The verifier fetches the page and downgrades the claim if the quote isn't there. The model never sets its own evidence status. |
 | **Every step is labelled 🤖 agent / 🤝 agent prepares, you submit / 👤 you**, and agents produce **drafts** (manifests, scope justifications, Limited Use text, listing copy) | This answers "what can an agent do for me, and where do I take over?" |
-| **Free-tier stack**: Groq (Qwen3-32B) or Gemini via the Vercel AI SDK, Tavily search | ₹0 to run. The free tier's small token budget pushed a good design choice: the model sees only short, relevant excerpts of official docs, so its context is small and cited. |
+| **Free-tier stack**: Groq (Qwen3.8-27B) or Gemini via the Vercel AI SDK, Tavily search | ₹0 to run. The free tier's small token budget pushed a good design choice: the model sees only short, relevant excerpts of official docs, so its context is small and cited. |
 | **Shareable everywhere**: permalinks per scenario (`/guides/gmail#testing`), Markdown export, and a JSON API | Developers paste guides into tickets. Agent builders can call `/api/guides/:slug` from their own agents. |
 | **No database** | Curated guides are JSON in the repo, so they're reviewable in PRs. Generated guides go to Vercel Blob, or a local folder in dev. |
 
@@ -100,7 +100,7 @@ npm run dev                  # http://localhost:3000
 
 | Variable | Needed for | Free key |
 |---|---|---|
-| `GROQ_API_KEY` (+ optional `GROQ_MODEL`, default `qwen/qwen3-32b`) | live generation (primary LLM) | console.groq.com |
+| `GROQ_API_KEY` (+ optional `GROQ_MODEL`, default `qwen/qwen3.8-27b`) | live generation (primary LLM) | console.groq.com |
 | `GOOGLE_GENERATIVE_AI_API_KEY` (+ `GEMINI_MODEL`) | live generation (fallback LLM, used if Groq is unset) | aistudio.google.com |
 | `TAVILY_API_KEY` | web research | app.tavily.com |
 | `BLOB_READ_WRITE_TOKEN` | persisting generated guides on Vercel | Vercel → Storage → Blob |
