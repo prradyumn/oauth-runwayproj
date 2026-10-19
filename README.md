@@ -11,7 +11,7 @@ OAuth Runway gives developers building AI agents a clear, evidence-backed path t
 There's a curated library, and a research agent that generates a shareable guide live for any app.
 
 - **Live app:** https://oauth-runwayproj.vercel.app (status: [/api/health](https://oauth-runwayproj.vercel.app/api/health))
-- **Walkthrough video:** _<add Loom URL>_
+- **Videos** (sent with the submission): a 3-min narrated explainer of every concept and label, and a 2.5-min narrated walkthrough of the real GitHub, Google and Slack consoles
 - **Verification write-up:** [VERIFICATION.md](VERIFICATION.md)
 
 ---
