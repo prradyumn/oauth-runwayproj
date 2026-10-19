@@ -49,6 +49,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html, body { overflow-x: clip; }
+
 body {
   background: var(--bg);
   color: var(--text);

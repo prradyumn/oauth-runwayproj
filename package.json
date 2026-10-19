@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "validate": "tsx scripts/validate.ts data/guides/*.json",
+    "verify": "tsx scripts/verify.ts",
+    "test": "tsx scripts/test-pipeline.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",

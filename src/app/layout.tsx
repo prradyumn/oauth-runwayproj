@@ -17,13 +17,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
         <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-20">
-          <div className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-6">
-            <Link href="/" className="font-semibold tracking-tight flex items-center gap-2">
+          <div className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-4 sm:gap-6">
+            <Link href="/" className="font-semibold tracking-tight flex items-center gap-2 shrink-0">
               <span aria-hidden className="inline-block w-6 h-6 rounded-md bg-accent text-white text-xs grid place-items-center">✈</span>
               OAuth Runway
             </Link>
-            <nav className="flex gap-4 text-sm text-muted">
-              <Link href="/#library" className="hover:text-text">Library</Link>
+            <nav className="flex gap-4 text-sm text-muted overflow-x-auto whitespace-nowrap">
+              <Link href="/#library" className="hover:text-text hidden sm:inline">Library</Link>
               <Link href="/generate" className="hover:text-text">Generate</Link>
               <Link href="/how-it-works" className="hover:text-text">How it works</Link>
               <Link href="/how-it-works#api" className="hover:text-text hidden sm:inline">API</Link>

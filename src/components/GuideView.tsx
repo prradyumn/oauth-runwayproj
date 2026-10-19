@@ -42,7 +42,7 @@ export default function GuideView({ guide }: { guide: Guide }) {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6 min-w-0">
       {isDemo && (
         <div className="rounded-xl border p-3 text-sm" style={{ borderColor: "var(--t4)", background: "var(--t4-bg)", color: "var(--t4)" }}>
           Demo-mode placeholder: no research was run because API keys aren&apos;t configured. Nothing on this page is a finding.
@@ -97,7 +97,7 @@ export default function GuideView({ guide }: { guide: Guide }) {
         {guide.composio.redirectUri.value && (
           <div className="space-y-2">
             <div className="text-xs text-muted">Redirect URI to register with {guide.app.name}</div>
-            <code className="block text-xs !p-2">{guide.composio.redirectUri.value}</code>
+            <code className="block text-xs !p-2 break-all">{guide.composio.redirectUri.value}</code>
             <div className="flex gap-2 items-center flex-wrap">
               <CopyButton text={guide.composio.redirectUri.value} />
               <EvidenceChip e={guide.composio.redirectUri.evidence} guide={guide} />
@@ -109,7 +109,7 @@ export default function GuideView({ guide }: { guide: Guide }) {
       {/* Scenario picker */}
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted">Difficulty depends on who connects and which scopes you need. Pick your situation:</h2>
-        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))` }}>
+        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(220px, 100%), 1fr))` }}>
           {guide.scenarios.map((s) => {
             const a = assess(s.factors);
             const active = s.id === scenario.id;
@@ -303,7 +303,7 @@ function ScenarioBody({ s, guide }: { s: Scenario; guide: Guide }) {
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="w-6 h-6 rounded-full bg-surface-2 border border-border grid place-items-center text-xs font-semibold">{i + 1}</span>
                 <span className="text-[11px] uppercase tracking-wide text-muted">{st.phase}</span>
-                <h3 className="font-medium flex-1 min-w-[200px]">{st.title}</h3>
+                <h3 className="font-medium flex-1 min-w-[min(200px,100%)]">{st.title}</h3>
                 <ActorBadge actor={st.actor} />
                 {st.estMinutes ? <span className="text-xs text-muted">~{st.estMinutes} min</span> : null}
               </div>
@@ -320,7 +320,7 @@ function ScenarioBody({ s, guide }: { s: Scenario; guide: Guide }) {
                     {st.values.map((v, j) => (
                       <div key={j} className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="text-muted">{v.label}:</span>
-                        <code>{v.value}</code>
+                        <code className="break-all">{v.value}</code>
                         <CopyButton text={v.value} />
                       </div>
                     ))}
