@@ -1,103 +1,118 @@
-import Image from "next/image";
+import Link from "next/link";
+import { listCurated, listGenerated, slugify } from "@/lib/store";
+import { assess, evidenceCounts, formatRange, guideTierRange, TIERS, type Tier } from "@/lib/rubric";
+import { LIBRARY_INDEX } from "@/lib/composio";
+import type { Guide } from "@/lib/schema";
+import SearchBox from "@/components/SearchBox";
+import { TierChip } from "@/components/ui";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+const ORDER = ["github", "slack", "hubspot", "linkedin", "gmail"];
+
+function GuideCard({ g }: { g: Guide }) {
+  const [lo, hi] = guideTierRange(g);
+  const c = evidenceCounts(g);
+  const easiest = g.scenarios.reduce((a, b) => (assess(a.factors).tier <= assess(b.factors).tier ? a : b));
+  const hardest = g.scenarios.reduce((a, b) => (assess(a.factors).tier >= assess(b.factors).tier ? a : b));
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <Link href={`/guides/${g.slug}`} className="card p-4 hover:bg-surface-2 transition flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="font-semibold">{g.app.name}</div>
+          <div className="text-xs text-muted">{g.app.category}</div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <span className="text-[11px] text-muted">{g.origin === "curated" ? "Curated" : "Agent"} · {g.lastVerified}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <TierChip tier={lo} />
+        {hi !== lo && (<><span className="text-xs text-muted">→</span><TierChip tier={hi} /></>)}
+      </div>
+      <div className="text-xs text-muted space-y-0.5">
+        <div>First connection: {formatRange(easiest.timeline.firstConnection.handsOnMinutes, "min")}</div>
+        <div>
+          Hardest path ({hardest.label}): {formatRange(hardest.timeline.production.handsOnHours, "h")} work
+          {hardest.timeline.production.waitDays ? ` + ${formatRange(hardest.timeline.production.waitDays, "days")} wait` : ""}
+        </div>
+      </div>
+      <div className="text-[11px] text-muted mt-auto">✅ {c.tested} tested · 📄 {c.documented} documented · ❓ {c.unverified} unverified</div>
+    </Link>
+  );
+}
+
+export default async function Home() {
+  const curated = (await listCurated()).sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug));
+  const generated = (await listGenerated()).filter((g) => !g.slug.startsWith("demo-"));
+  const have = new Set([...curated, ...generated].map((g) => g.slug));
+  const index = LIBRARY_INDEX.filter((a) => !have.has(slugify(a.name)));
+
+  return (
+    <div className="mx-auto max-w-6xl px-4">
+      <section className="py-14 space-y-6">
+        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight max-w-3xl">
+          How long until your users can connect <span className="text-accent">your agent</span> to an app?
+        </h1>
+        <p className="text-lg text-muted max-w-2xl">
+          Before launch you may need your own OAuth app, approved by the provider. Look up an app to see how hard it is, the hands-on time versus the
+          wait for approval, what an agent can do for you, and where you take over. Every claim shows its evidence.
+        </p>
+        <SearchBox />
+        <p className="text-xs text-muted">Not in the library? The research agent reads the provider&apos;s docs and builds a shareable guide live (1–3 min).</p>
+      </section>
+
+      <section className="pb-10">
+        <div className="card p-4 grid sm:grid-cols-5 gap-3">
+          {([0, 1, 2, 3, 4] as Tier[]).map((t) => (
+            <div key={t} className="space-y-1">
+              <TierChip tier={t} />
+              <p className="text-xs text-muted">{TIERS[t].blurb}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="library" className="pb-12 space-y-4">
+        <div>
+          <h2 className="text-2xl font-semibold">Library</h2>
+          <p className="text-sm text-muted">Researched from official docs, with every quoted claim then checked against its source page in code. Chosen to span the difficulty range.</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {curated.map((g) => <GuideCard key={g.slug} g={g} />)}
+        </div>
+      </section>
+
+      {generated.length > 0 && (
+        <section className="pb-12 space-y-4">
+          <h2 className="text-2xl font-semibold">Generated by the agent</h2>
+          <p className="text-sm text-muted">Built live from public docs and not reviewed by a person, so treat unverified items as leads.</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {generated.map((g) => <GuideCard key={g.slug} g={g} />)}
+          </div>
+        </section>
+      )}
+
+      <section className="pb-16 space-y-4">
+        <h2 className="text-2xl font-semibold">More OAuth apps on Composio</h2>
+        <p className="text-sm text-muted max-w-3xl">
+          Toolkits from Composio&apos;s managed-auth directory. <strong>BYO</strong> apps have no Composio-managed OAuth app, so you must register your own
+          before anyone can connect. Click any app to generate its guide.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {index
+            .sort((a, b) => Number(a.managed) - Number(b.managed))
+            .map((a) => (
+              <Link
+                key={a.name}
+                href={`/generate?app=${encodeURIComponent(a.name)}`}
+                className="text-sm rounded-full border border-border px-3 py-1 hover:bg-surface-2"
+                title={a.managed ? "Composio-managed app available" : "No managed app — bring your own"}
+              >
+                {a.name}{" "}
+                <span className="text-[11px]" style={{ color: a.managed ? "var(--muted)" : "var(--t2)" }}>{a.managed ? "managed" : "BYO"}</span>
+              </Link>
+            ))}
+        </div>
+      </section>
     </div>
   );
 }

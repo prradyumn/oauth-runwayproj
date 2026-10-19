@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --border: #e6e5e1;
+  --text: #1b1b19;
+  --muted: #6b6a64;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --t0: #15803d; --t0-bg: #e9f8ee;
+  --t1: #0f766e; --t1-bg: #e6f7f5;
+  --t2: #b45309; --t2-bg: #fdf3e2;
+  --t3: #c2410c; --t3-bg: #fdeee6;
+  --t4: #b91c1c; --t4-bg: #fdecec;
+  --ok: #15803d; --doc: #1d4ed8; --doc-bg: #eaf0ff; --unv: #8a6d00; --unv-bg: #fbf5dc;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0f0f0e;
+    --surface: #171716;
+    --surface-2: #1f1f1d;
+    --border: #2d2d2a;
+    --text: #ecebe6;
+    --muted: #9b9a93;
+    --accent: #8b85ff;
+    --accent-soft: #23224a;
+    --t0: #4ade80; --t0-bg: #12301d;
+    --t1: #2dd4bf; --t1-bg: #0f2e2b;
+    --t2: #fbbf24; --t2-bg: #33270d;
+    --t3: #fb923c; --t3-bg: #36200f;
+    --t4: #f87171; --t4-bg: #3a1616;
+    --ok: #4ade80; --doc: #93b4ff; --doc-bg: #1a2442; --unv: #e8c850; --unv-bg: #2f2a12;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.05em 0.35em;
+  overflow-wrap: anywhere;
+}
+
+@keyframes pulse-dot { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+.pulse { animation: pulse-dot 1.2s ease-in-out infinite; }
