@@ -150,8 +150,19 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
   const llm = deps?.model !== undefined ? deps.model : getModel();
   const search_ = deps?.search ?? search;
   const ask = deps?.askJSON ?? ((sys: string, prompt: string, e: Emit, max?: number) => askJSON(llm!.model, sys, prompt, e, max));
-  // Search API is optional: with no Tavily key the agent crawls the provider's docs itself.
-  const useSearch = !!deps?.search || !!process.env.TAVILY_API_KEY;
+  // Discovery: Tavily search (keyless by default, or with a free key). If search is disabled,
+  // rate-limited or thin, the agent falls back to crawling the provider's docs itself.
+  let useSearch = !!deps?.search || process.env.SEARCH_PROVIDER !== "crawl";
+  const searchOrFallback = async (q: string, o: Parameters<typeof search>[1]): Promise<SearchHit[]> => {
+    if (!useSearch) return [];
+    try {
+      return await search_(q, o);
+    } catch (err) {
+      useSearch = false;
+      emit({ type: "log", message: `Web search unavailable (${err instanceof Error ? err.message.slice(0, 80) : "error"}) — switching to the built-in docs crawler.` });
+      return [];
+    }
+  };
   if (!llm) {
     emit({ type: "meta", mode: "demo" });
     return runDemo(input, emit);
@@ -162,14 +173,16 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
 
   // ---------- 1. resolve ----------
   emit({ type: "stage", stage: "resolve", status: "start" });
-  const first = useSearch
-    ? await search_(isUrl(input) ? `${new URL(validUrl(input)!).hostname} OAuth 2.0 API developer documentation` : `${input} OAuth 2.0 API developer documentation create app`, { maxResults: 6 })
-    : [];
+  const first = await searchOrFallback(
+    isUrl(input) ? `${new URL(validUrl(input)!).hostname} OAuth 2.0 API developer documentation` : `${input} OAuth 2.0 API developer documentation create app`,
+    { maxResults: 6 },
+  );
+  const searched = first.length > 0;
   const resolved = ResolveOut.parse(
     await ask(
-      "You identify software products and their official developer documentation." + (useSearch ? " Use only the search results given." : " Use your own knowledge; every URL you give will be fetched to check it exists, and wrong URLs are discarded."),
+      "You identify software products and their official developer documentation." + (searched ? " Use the search results given." : " Use your own knowledge; every URL you give will be fetched to check it exists, and wrong URLs are discarded."),
       `User asked about: "${input}"\n\n${
-        useSearch ? `Search results:\n${first.map((h, i) => `[${i + 1}] ${h.title}\n${h.url}\n${h.content.slice(0, 300)}`).join("\n\n")}\n\n` : ""
+        searched ? `Search results:\n${first.map((h, i) => `[${i + 1}] ${h.title}\n${h.url}\n${h.content.slice(0, 300)}`).join("\n\n")}\n\n` : ""
       }Return JSON: {"appName": string, "website": url, "category": string (e.g. "CRM", "Email", "Developer tools"), "developerPortalUrl": url where developers create apps, "docsUrl": url of OAuth docs, "officialDomains": [bare hostnames that host this provider's OWN developer docs, e.g. "developers.hubspot.com"], "candidateUrls": [up to 8 full URLs of official pages about: creating an OAuth app, OAuth scopes, the app review / verification / marketplace publishing process, API access tiers or partner programs], "supportsOAuth": boolean (does it offer OAuth 2.0 for third-party apps?), "notes": string}`,
       emit,
       900,
@@ -190,20 +203,27 @@ export async function runPipeline(input: string, emit: Emit, deps?: Partial<Deps
     `${app} app review verification approval publish marketplace requirements`,
     `${app} API access requirements partner program pricing rate limits`,
   ];
-  const runQueries = (incl?: string[]) =>
-    Promise.all(queries.map((q) => search_(q, { includeDomains: incl, maxResults: 3, raw: true }).catch(() => [] as SearchHit[])));
-  let hits: SearchHit[];
+  const runQueries = async (incl?: string[]) => {
+    const out: SearchHit[][] = [];
+    for (const q of queries) out.push(await searchOrFallback(q, { includeDomains: incl, maxResults: 3, raw: true })); // sequential: gentle on keyless limits
+    return out;
+  };
+  const seen = new Set<string>();
+  let hits: SearchHit[] = [];
   if (useSearch) {
     let batches = await runQueries(domains);
-    if (batches.flat().length < 3) {
+    if (useSearch && batches.flat().length < 3) {
       emit({ type: "log", message: "Few results on official domains — widening search." });
       batches = await runQueries(undefined);
     }
-    const seen = new Set<string>();
     hits = batches.flat().filter((h) => h.raw.length > 200 && !seen.has(h.url) && seen.add(h.url)).slice(0, 8);
-  } else {
+    if (hits.length) emit({ type: "log", message: `Web search found ${hits.length} relevant pages.` });
+  }
+  if (hits.length < 4) {
+    // Search off, rate-limited or thin: crawl the docs site and top up.
     const extra = [resolved.docsUrl, resolved.developerPortalUrl].map(validUrl).filter((u): u is string => !!u && new URL(u).pathname.length > 1);
-    hits = await crawlDocs({ app, domains, candidates: [...resolved.candidateUrls, ...extra] }, emit);
+    const crawled = await crawlDocs({ app, domains, candidates: [...resolved.candidateUrls, ...extra], max: 8 - hits.length }, emit);
+    hits = [...hits, ...crawled.filter((h) => !seen.has(h.url) && seen.add(h.url))].slice(0, 8);
   }
   if (!hits.length) throw new Error(`Couldn't find readable documentation for ${app}.`);
 

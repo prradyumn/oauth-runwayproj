@@ -1,8 +1,15 @@
 /**
- * Web research via Tavily (free tier). Returns page text we keep for two jobs:
+ * Web research via Tavily. Works with no account: keyless mode (header below) is free and
+ * rate-limited; a free API key (no credit card) raises the limits. Returns page text we keep for two jobs:
  *  1. a small, relevant excerpt goes to the LLM (free-tier token limits are tight)
  *  2. the full text is kept so the verifier can check quotes without re-fetching
  */
+
+export class SearchUnavailable extends Error {
+  constructor(public status: number, detail: string) {
+    super(`Search unavailable (${status}): ${detail}`);
+  }
+}
 
 export type SearchHit = { url: string; title: string; content: string; raw: string };
 
@@ -12,7 +19,10 @@ export async function search(
 ): Promise<SearchHit[]> {
   const res = await fetch("https://api.tavily.com/search", {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${process.env.TAVILY_API_KEY}` },
+    headers: {
+      "content-type": "application/json",
+      ...(process.env.TAVILY_API_KEY ? { authorization: `Bearer ${process.env.TAVILY_API_KEY}` } : { "x-tavily-access-mode": "keyless" }),
+    },
     body: JSON.stringify({
       query,
       search_depth: "advanced",
@@ -22,7 +32,7 @@ export async function search(
     }),
     signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`Search failed (${res.status}): ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) throw new SearchUnavailable(res.status, (await res.text()).slice(0, 200));
   const data = (await res.json()) as { results?: { url: string; title: string; content: string; raw_content?: string | null }[] };
   return (data.results ?? []).map((r) => ({ url: r.url, title: r.title, content: r.content ?? "", raw: r.raw_content ?? "" }));
 }
