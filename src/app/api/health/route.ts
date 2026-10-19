@@ -15,6 +15,9 @@ export async function GET(req: Request) {
     search: process.env.SEARCH_PROVIDER === "crawl" ? "built-in crawler only" : process.env.TAVILY_API_KEY ? "Tavily (API key)" : "Tavily keyless → crawler fallback",
     storage: storageMode(),
     blobEnvVarsPresent: blobEnvNames(),
+    // Names only (never values), to debug store connections that use a custom prefix.
+    storageLikeEnvNames: Object.keys(process.env).filter((n) => /BLOB|STORE|STORAGE|READ_WRITE/i.test(n)),
+    deployment: { env: process.env.VERCEL_ENV ?? "local", commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null },
   };
   if (new URL(req.url).searchParams.get("probe") === "1" && blobEnabled()) {
     try {
