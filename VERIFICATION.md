@@ -89,6 +89,20 @@ A separate reviewer agent re-read the sources for **48 high-impact claims**: eve
 |---|---|---|---|
 | R1 | Slack Marketplace: demo video is **required** (quote: "For a new submission, it should include a video showing the full installation and OAuth flow.") | The verifier flagged the quote as a near-match. The full passage begins: "You can help us review your app more quickly by providing us with a short video demo." It's a recommendation that speeds up review | Kept **not required, strongly recommended**. A reviewer can overstate too, so its edits go through the same verification |
 
+## 3b. Live agent: what testing it on unfamiliar apps taught us
+
+We ran the live agent on apps outside the library (Zoom, Calendly, Xero, Notion), using the free Groq tier and no search API.
+
+| Finding | Evidence | Change |
+|---|---|---|
+| The model invents docs URLs | Zoom: 6–8 of ~8 suggested URLs didn't exist (e.g. `marketplace.zoom.us/docs/guides/publish/app-review`) | Code fetches every suggested URL and drops dead ones. Real pages come from the sitemap and links |
+| The model names the marketing domain, not the docs host | Zoom run: `zoom.us`; 5,454 sitemap pages, 0 relevant | The crawler probes `developers.` / `developer.` / `docs.` hosts and filters to docs-like pages |
+| A small model over-claims requirements | Xero: security assessment, business verification, demo video, domain verification and a "100-user cap" (Google's number) were all marked required, with no source | In agent guides, only quote-confirmed requirements raise the tier. The rest appear as "could be up to …" |
+| The verifier catches misattributed quotes | Zoom 2/18, Xero 3/7, Notion 1/8 quotes not on the cited page → downgraded | Working as designed |
+| Model output drifts from the requested JSON shape | Factors returned as bare `true` instead of `{value, quote}`; booleans in text fields. One bad field silently emptied all steps (0 steps on the first Zoom run) | Lenient parsing per item, plus repair of truncated JSON |
+| The free tier has an undocumented output-tokens-per-minute cap | `qwen/qwen3.8-27b`: 1,000 output tokens/min, too small for one guide | Switched to `openai/gpt-oss-120b` with `reasoning_effort: low` |
+| Coverage varies between runs | Two Xero runs read different page sets; one missed the partner-program page | Documented as a limitation. A search key or a stronger model improves coverage |
+
 ## 4. Console walkthroughs (✅ tested)
 
 _Pending: see [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md). Each walkthrough adds `testLog` entries to its guide and upgrades the claims it confirms._
