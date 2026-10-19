@@ -10,7 +10,7 @@ OAuth Runway gives developers building AI agents a clear, evidence-backed path t
 
 There's a curated library, and a research agent that generates a shareable guide live for any app.
 
-- **Live app:** _<add Vercel URL>_
+- **Live app:** https://oauth-runwayproj.vercel.app (status: [/api/health](https://oauth-runwayproj.vercel.app/api/health))
 - **Walkthrough video:** _<add Loom URL>_
 - **Verification write-up:** [VERIFICATION.md](VERIFICATION.md)
 
@@ -124,7 +124,7 @@ Scripts:
 - `npm run verify`: re-check every quote against the live pages and write the report
 - `npm test`: offline pipeline test with canned search and LLM responses. It checks quote downgrading, ID normalization and scoring.
 
-**Deploy:** import the repo in Vercel, set the env vars above, and create a Blob store (Storage → Blob → connect to project). `/api/generate` sets `maxDuration = 300`.
+**Deploy:** import the repo in Vercel, set the env vars above, and create a Blob store (Storage → Blob → connect to project). Public and private stores both work. If `/api/health` reports `storage: ephemeral` after connecting, Vercel didn't inject the token: copy `BLOB_READ_WRITE_TOKEN` from the store into the project's environment variables and redeploy. `GET /api/health?probe=1` writes and reads a test file to confirm storage. `/api/generate` sets `maxDuration = 300`.
 
 ## Limitations
 
